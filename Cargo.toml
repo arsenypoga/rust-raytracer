@@ -5,5 +5,16 @@ authors = ["arsenypoga <semiretoja@gmail.com>"]
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+name = "raytracer"
+path = "src/lib.rs"
+
+[[bin]]
+name = "raytracer"
+path = "src/bin/main.rs"
 
 [dependencies]
+image = "0.23.4"
+
+[dev-dependencies]
+cargo-husky = "1"
