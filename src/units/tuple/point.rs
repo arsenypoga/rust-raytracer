@@ -1,5 +1,6 @@
 use crate::units::tuple::{Tuple, Vector};
 use crate::units::utils;
+use crate::units::Matrix;
 use std::ops;
 
 #[derive(Debug, Copy, Clone)]
@@ -84,6 +85,12 @@ impl PartialEq for Point {
         utils::float_eq(self.x, other.x)
             && utils::float_eq(self.y, other.y)
             && utils::float_eq(self.z, other.z)
+    }
+}
+
+impl From<Matrix> for Point {
+    fn from(m: Matrix) -> Point {
+        Point::new(m[0][0], m[1][0], m[2][0])
     }
 }
 
