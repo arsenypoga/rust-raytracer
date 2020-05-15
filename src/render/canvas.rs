@@ -174,6 +174,6 @@ mod tests {
     fn write_jpg() {
         let mut canvas = Canvas::new(10, 20);
         canvas.write_pixel(3, 3, QuantColor::new(0, 130, 50));
-        canvas.write_jpg("./image.jpg");
+        canvas.write_png("./image.jpg");
     }
 }
