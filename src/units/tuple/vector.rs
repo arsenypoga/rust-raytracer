@@ -1,6 +1,5 @@
 use crate::units::tuple::Tuple;
 use crate::units::utils;
-use crate::units::Matrix;
 use std::ops;
 
 #[derive(Debug, Copy, Clone)]
@@ -96,12 +95,6 @@ impl ops::Neg for Vector {
     type Output = Vector;
     fn neg(self) -> Vector {
         Vector::new(-self.x, -self.y, -self.z)
-    }
-}
-
-impl From<Matrix> for Vector {
-    fn from(m: Matrix) -> Vector {
-        Vector::new(m[0][0], m[1][0], m[2][0])
     }
 }
 
