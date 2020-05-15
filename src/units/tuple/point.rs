@@ -1,6 +1,5 @@
 use crate::units::tuple::{Tuple, Vector};
 use crate::units::utils;
-use crate::units::Matrix;
 use std::ops;
 
 #[derive(Debug, Copy, Clone)]
@@ -77,12 +76,6 @@ impl ops::Neg for Point {
     type Output = Point;
     fn neg(self) -> Point {
         Point::new(-self.x, -self.y, -self.z)
-    }
-}
-
-impl From<Matrix> for Point {
-    fn from(m: Matrix) -> Point {
-        Point::new(m[0][0], m[1][0], m[2][0])
     }
 }
 
