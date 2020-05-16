@@ -1,7 +1,7 @@
 //! Miscelaneous utility functions
 
 /// comparison constant
-const EPSILON: f64 = 0.00001;
+pub const EPSILON: f64 = 0.00001;
 
 /// returns if both numbers are equal to an arbitrary number
 /// called epsilon

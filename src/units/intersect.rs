@@ -1,9 +1,10 @@
 //! Intersection operations
+use crate::units::utils;
 use crate::units::Sphere;
-// use std::ops;
-
+use std::cmp::Ordering;
+use std::ops;
 /// Intersection
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy)]
 pub struct Intersection<'a> {
     /// Point of intersection
     pub t: f64,
@@ -28,6 +29,36 @@ impl<'a> Intersection<'a> {
             Some(i2)
         } else {
             None
+        }
+    }
+}
+impl<'a> Eq for Intersection<'a> {}
+impl<'a> Ord for Intersection<'a> {
+    fn cmp(&self, other: &Self) -> Ordering {
+        if (self.t - other.t) > utils::EPSILON {
+            return Ordering::Greater;
+        } else if (self.t - other.t) < utils::EPSILON {
+            return Ordering::Less;
+        } else {
+            return Ordering::Equal;
+        }
+    }
+}
+
+impl<'a> PartialEq for Intersection<'a> {
+    fn eq(&self, other: &Intersection) -> bool {
+        utils::float_eq(self.t, other.t)
+    }
+}
+
+impl<'a> PartialOrd for Intersection<'a> {
+    fn partial_cmp(&self, other: &Intersection) -> Option<Ordering> {
+        if (self.t - other.t) > utils::EPSILON {
+            return Some(Ordering::Greater);
+        } else if (self.t - other.t) < utils::EPSILON {
+            return Some(Ordering::Less);
+        } else {
+            return Some(Ordering::Equal);
         }
     }
 }
