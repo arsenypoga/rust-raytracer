@@ -168,12 +168,12 @@ mod tests {
     fn write_ppm() {
         let mut canvas = Canvas::new(10, 20);
         canvas.write_pixel(3, 3, QuantColor::new(30, 50, 40));
-        canvas.write_ppm("./image.ppm");
+        canvas.write_ppm("./target/image.ppm");
     }
     #[test]
     fn write_jpg() {
         let mut canvas = Canvas::new(10, 20);
         canvas.write_pixel(3, 3, QuantColor::new(0, 130, 50));
-        canvas.write_png("./image.jpg");
+        canvas.write_png("./target/image.jpg");
     }
 }
