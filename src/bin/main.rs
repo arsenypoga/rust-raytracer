@@ -1,8 +1,8 @@
 use ::raytracer::render::canvas::Canvas;
-use ::raytracer::units::color::RED;
+use ::raytracer::units::color::{QuantColor, RED, WHITE};
 use ::raytracer::units::tuple::{Point, Tuple, Vector};
-use ::raytracer::units::{Ray, Sphere};
-use ::raytracer::world::{tick, Environment, Projectile};
+use ::raytracer::units::{Intersection, Ray, Sphere};
+use ::raytracer::world::{tick, Environment, Material, PointLight, Projectile};
 use std::env;
 use std::time::Instant;
 
@@ -13,7 +13,7 @@ fn main() {
     match args[1].as_ref() {
         "projectile" => simulate_projectile(),
         "canvas" => simulate_projectile_on_canvas(),
-        "shadow" => draw_shadow(100),
+        "shadow" => draw_shadow(400),
         _ => println!("Command not recognized!"),
     }
     let duration = start.elapsed();
@@ -73,8 +73,19 @@ fn draw_shadow(size: usize) {
     let mut canvas = Canvas::new(size, size);
     // let color = QuantColor::new(255, 0, 0);
 
-    let shape = Sphere::new();
+    // let mut shape = Sphere::new();
+    // shape.material = Material::default();
+    // shape.material.color = QuantColor::new(255, 42, 255);
 
+    let shape = Sphere {
+        material: Material {
+            color: QuantColor::new(255, 42, 255),
+            ..Material::default()
+        },
+        ..Sphere::default()
+    };
+
+    let light = PointLight::new(Point::new(-10, 10, -10), WHITE);
     for y in 0..size {
         let world_y = half - pixel_size * (y as f64);
         for x in 0..size {
@@ -85,7 +96,16 @@ fn draw_shadow(size: usize) {
 
             let xs = r.intersect(&shape);
             if xs.len() != 0 {
-                canvas.write_pixel(x, y, RED);
+                let hit = Intersection::hit(xs).unwrap();
+                let hit_point = r.position(hit.t);
+                let hit_normal = hit.object.normal(hit_point);
+                let eyev = -r.direction;
+                let color = hit
+                    .object
+                    .material
+                    .lightning(light, hit_point, eyev, hit_normal)
+                    .clamp();
+                canvas.write_pixel(x, y, color);
             }
         }
     }
