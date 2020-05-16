@@ -2,7 +2,7 @@
 
 use crate::units::tuple::{Point, Tuple, Vector};
 use crate::units::{Matrix, IDENTITY_MATRIX};
-
+use crate::world::Material;
 // pub trait Object {}
 
 ///Sphere represents a spere object.
@@ -15,6 +15,8 @@ pub struct Sphere {
     pub radius: f64,
     /// Transform matrix for an object
     pub transform_matrix: Matrix,
+    /// Object material
+    pub material: Material,
 }
 
 impl Sphere {
@@ -29,11 +31,7 @@ impl Sphere {
     ///
     /// ```
     pub fn new() -> Sphere {
-        Sphere {
-            origin: Point::new(0, 0, 0),
-            radius: 1.0,
-            transform_matrix: IDENTITY_MATRIX,
-        }
+        Sphere::default()
     }
 
     /// Transforms sphere with the new transformation matrix
@@ -56,6 +54,7 @@ impl Sphere {
             origin: self.origin,
             radius: 1.0,
             transform_matrix: transform,
+            material: self.material,
         }
     }
     /// Computes normal at the world point of an object
@@ -79,6 +78,16 @@ impl Sphere {
             Vector::from(self.transform_matrix.invert().unwrap().transpose() * object_normal);
 
         world_normal.normalize()
+    }
+}
+impl Default for Sphere {
+    fn default() -> Sphere {
+        Sphere {
+            origin: Point::new(0, 0, 0),
+            radius: 1.0,
+            transform_matrix: IDENTITY_MATRIX,
+            material: Material::default(),
+        }
     }
 }
 
