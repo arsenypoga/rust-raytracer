@@ -1,10 +1,9 @@
 //! Intersection operations
-use crate::units::tuple::{Point, Tuple, Vector};
+use crate::units::tuple::{Point, Vector};
 use crate::units::utils;
 use crate::units::Ray;
 use crate::units::Sphere;
 use std::cmp::Ordering;
-use std::ops;
 
 /// Intersection
 #[derive(Debug, Clone, Copy)]
@@ -37,10 +36,10 @@ impl<'a> Intersection<'a> {
 
     /// Returns hits from given intersection vector
     pub fn hit(xs: Vec<Intersection>) -> Option<Intersection> {
-        if xs.len() == 0 {
+        if xs.is_empty() {
             None
         } else if xs.len() == 1 {
-            return Some(xs[0]);
+            Some(xs[0])
         } else {
             let i1 = xs[0];
             let i2 = xs[1];
@@ -61,11 +60,10 @@ impl<'a> Intersection<'a> {
         let position = r.position(self.t);
         let mut normalv = self.object.normal(position);
         let eyev = -r.direction;
-        let mut inside = false;
+        let inside = normalv.dot(eyev) < 0.;
 
         if normalv.dot(eyev) < 0. {
             normalv = -normalv;
-            inside = true;
         }
         Computations {
             t: self.t,
@@ -83,11 +81,11 @@ impl<'a> Eq for Intersection<'a> {}
 impl<'a> Ord for Intersection<'a> {
     fn cmp(&self, other: &Self) -> Ordering {
         if (self.t - other.t) > utils::EPSILON {
-            return Ordering::Greater;
+            Ordering::Greater
         } else if (self.t - other.t) < utils::EPSILON {
-            return Ordering::Less;
+            Ordering::Less
         } else {
-            return Ordering::Equal;
+            Ordering::Equal
         }
     }
 }
@@ -101,11 +99,11 @@ impl<'a> PartialEq for Intersection<'a> {
 impl<'a> PartialOrd for Intersection<'a> {
     fn partial_cmp(&self, other: &Intersection) -> Option<Ordering> {
         if (self.t - other.t) > utils::EPSILON {
-            return Some(Ordering::Greater);
+            Some(Ordering::Greater)
         } else if (self.t - other.t) < utils::EPSILON {
-            return Some(Ordering::Less);
+            Some(Ordering::Less)
         } else {
-            return Some(Ordering::Equal);
+            Some(Ordering::Equal)
         }
     }
 }
@@ -113,6 +111,7 @@ impl<'a> PartialOrd for Intersection<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::units::tuple::Tuple;
     #[test]
     fn hit() {
         // The hit, when all intersections have positive t

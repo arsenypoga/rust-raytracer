@@ -101,35 +101,17 @@ impl Matrix {
     /// ```
 
     pub fn submatrix(&self, row: usize, col: usize) -> Matrix {
-        // let height = self.height - 1;
-        // let width = self.width - 1;
-        // let mut return_matrix = Matrix::new(width, height);
-        // let mut return_height = 0;
-        // for r in 0..self.height {
-        //     if r != row {
-        //         let mut return_width = 0;
-        //         for c in 0..self.width {
-        //             if c != col {
-        //                 return_matrix[return_height][return_width] = self[r][c];
-        //                 return_width += 1;
-        //             }
-        //         }
-        //         return_height += 1;
-        //     }
-        // }
-        // return_matrix
-
         let mut values = [[0.0; 4]; 4];
         let width = self.width - 1;
         let height = self.height - 1;
 
-        for r in 0..width {
-            for c in 0..height {
+        for (r, iter_row) in values.iter_mut().enumerate().take(width) {
+            for (c, iter_item) in iter_row.iter_mut().enumerate().take(height) {
                 let rx = if r < row { r } else { r + 1 };
 
                 let cx = if c < col { c } else { c + 1 };
 
-                values[r][c] = self[rx][cx];
+                *iter_item = self[rx][cx];
             }
         }
 
@@ -388,6 +370,21 @@ impl Matrix {
 
         return_matrix
     }
+
+    /// Transforms the view according to given parameters
+    pub fn view_transform(from: Point, to: Point, up: Vector) -> Matrix {
+        let forward = (to - from).normalize();
+        let upn = up.normalize();
+        let left = forward.cross(upn);
+        let true_up = left.cross(forward);
+        let orientation = Matrix::from([
+            [left.x, left.y, left.z, 0.],
+            [true_up.x, true_up.y, true_up.z, 0.],
+            [-forward.x, -forward.y, -forward.z, 0.],
+            [0., 0., 0., 1.],
+        ]);
+        orientation * Matrix::translate(-from.x, -from.y, -from.z)
+    }
 }
 
 impl ops::Mul<Matrix> for Matrix {
@@ -645,16 +642,24 @@ mod tests {
         let b = a.invert().unwrap();
         assert_eq!(b[0][0], -0.040740740740740744);
     }
-    #[test]
-    fn to_tuple() {
-        let a = Matrix::from([
-            [1., 0., 0., 0.],
-            [-5.0, 0., 0., 0.],
-            [-4.0, 0., 0., 0.],
-            [-7.0, 0., 0., 0.],
-        ]);
 
-        let b = Point::from(a);
-        assert_eq!(b, Point::new(1., -5., -4.));
+    #[test]
+    fn view_transform() {
+        // The transformation matrix for the default orientation
+        let t = Matrix::view_transform(
+            Point::new(0, 0, 0),
+            Point::new(0, 0, -1),
+            Vector::new(0, 1, 0),
+        );
+
+        assert_eq!(t, IDENTITY_MATRIX);
+
+        let t = Matrix::view_transform(
+            Point::new(0, 0, 8),
+            Point::new(0, 0, 0),
+            Vector::new(0, 1, 0),
+        );
+
+        assert_eq!(t, Matrix::translate(0, 0, -8));
     }
 }
