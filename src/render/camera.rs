@@ -18,7 +18,7 @@ impl Camera {
         let half_view = (field_of_view / 2.).tan();
 
         let aspect = hsize as f64 / vsize as f64;
-        let (half_width, half_height) = if aspect >= 0.1 {
+        let (half_width, half_height) = if aspect >= 1. {
             (half_view, half_view / aspect)
         } else {
             (half_view * aspect, half_view)
@@ -28,7 +28,7 @@ impl Camera {
             vsize,
             field_of_view,
             transform: IDENTITY_MATRIX,
-            pixel_size: (half_width * 2.) / hsize as f64,
+            pixel_size: (half_width * 2.) / (hsize as f64),
             half_height,
             half_width,
         }
@@ -79,10 +79,13 @@ mod tests {
 
         // Pixel on a horizontal canvas
         let c = Camera::new(200, 125, consts::FRAC_PI_2);
+        println!("{:?}", c.pixel_size);
+
         assert!(utils::float_eq(c.pixel_size, 0.01));
 
         // Pixel size on vertical canvas
         let c = Camera::new(125, 200, consts::FRAC_PI_2);
+        println!("{:?}", c.pixel_size);
         assert!(utils::float_eq(c.pixel_size, 0.01));
     }
 
