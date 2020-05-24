@@ -36,23 +36,14 @@ impl<'a> Intersection<'a> {
 
     /// Returns hits from given intersection vector
     pub fn hit(xs: Vec<Intersection>) -> Option<Intersection> {
-        if xs.is_empty() {
+        let mut clone = xs.clone();
+        clone.retain(|i| i.t > 0.);
+        clone.sort_by(|a, b| a.t.partial_cmp(&b.t).unwrap_or(Ordering::Equal));
+
+        if clone.is_empty() {
             None
-        } else if xs.len() == 1 {
-            Some(xs[0])
         } else {
-            let i1 = xs[0];
-            let i2 = xs[1];
-            // let is_i1_positive =
-            if (((i1.t > 0.) && (i2.t > 0.)) && (i1.t < i2.t)) || ((i1.t > 0.) && (i2.t < 0.)) {
-                Some(i1)
-            } else if (((i1.t > 0.) && (i2.t > 0.)) && (i1.t > i2.t))
-                || ((i1.t < 0.) && (i2.t > 0.))
-            {
-                Some(i2)
-            } else {
-                None
-            }
+            Some(clone[0])
         }
     }
 

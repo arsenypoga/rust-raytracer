@@ -32,7 +32,7 @@ impl World {
     pub fn shade_hit(&self, c: Computations) -> QuantColor {
         c.object
             .material
-            .lightning(self.light.unwrap(), c.point, c.eyev, c.normalv)
+            .lightning(self.light.unwrap(), c.point, c.eyev, c.normalv, false)
             .clamp()
     }
 

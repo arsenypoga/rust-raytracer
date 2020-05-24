@@ -105,7 +105,7 @@ fn draw_shadow(size: usize) {
                 let color = hit
                     .object
                     .material
-                    .lightning(light, hit_point, eyev, hit_normal)
+                    .lightning(light, hit_point, eyev, hit_normal, false)
                     .clamp();
                 canvas.write_pixel(x, y, color);
             }
