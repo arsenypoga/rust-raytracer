@@ -1,6 +1,6 @@
 //! Ray operations
 use crate::units::tuple::{Point, Vector};
-use crate::units::{Intersection, Matrix, Sphere};
+use crate::units::Matrix;
 /// Ray is a simply line.
 ///
 #[derive(Debug, Copy, Clone)]
@@ -52,44 +52,6 @@ impl Ray {
         self.origin + self.direction * t.into()
     }
 
-    /// Returns Intersection of a Sphere with a Ray
-    ///
-    /// # Arguments
-    /// * `ray` - a Ray struct that is cast onto the Sphere
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use ::raytracer::units::{Sphere, Ray};
-    /// use ::raytracer::units::tuple::{Point, Tuple, Vector};
-    /// let s = Sphere::new();
-    /// let r = Ray::new(Point::new(0, 0, 0), Vector::new(0, 1, 0));
-    ///
-    ///
-    ///
-    /// ```
-    pub fn intersect<'a>(&self, object: &'a Sphere) -> Vec<Intersection<'a>> {
-        let r2 = self.transform(object.transform_matrix.invert().unwrap());
-
-        let distance = r2.origin - object.origin;
-
-        let a = r2.direction.dot(r2.direction);
-        let b = 2. * r2.direction.dot(distance);
-        let c = distance.dot(distance) - 1.;
-
-        let discriminant = b.powi(2) - (4. * a * c);
-        if discriminant < 0. {
-            return Vec::new();
-        }
-
-        let t1 = (-b - discriminant.sqrt()) / (2. * a);
-        let t2 = (-b + discriminant.sqrt()) / (2. * a);
-        vec![
-            Intersection { t: t1, object },
-            Intersection { t: t2, object },
-        ]
-    }
-
     /// Translates
     pub fn transform(self, m: Matrix) -> Ray {
         Ray {
@@ -123,64 +85,6 @@ mod tests {
         assert_eq!(Point::new(3, 3, 4), r.position(1));
         assert_eq!(Point::new(1, 3, 4), r.position(-1));
         assert_eq!(Point::new(4.5, 3.0, 4.0), r.position(2.5));
-    }
-    #[test]
-    fn intersect() {
-        // Ray intersects sphere at two points.
-        let r = Ray::new(Point::new(0, 0, -5), Vector::new(0, 0, 1));
-        let s = Sphere::new();
-        let i = r.intersect(&s);
-        assert_eq!(i.len(), 2);
-        assert_eq!(i[0].t, 4.0);
-        assert_eq!(i[1].t, 6.0);
-
-        // Ray intersects sphere at a tangent.
-        let r = Ray::new(Point::new(0, 1, -5), Vector::new(0, 0, 1));
-        let s = Sphere::new();
-        let i = r.intersect(&s);
-        assert_eq!(i.len(), 2);
-        assert_eq!(i[0].t, 5.0);
-        assert_eq!(i[1].t, 5.0);
-
-        // Ray misses the point
-        let r = Ray::new(Point::new(0, 2, -5), Vector::new(0, 0, 1));
-        let s = Sphere::new();
-        let i = r.intersect(&s);
-        assert_eq!(i.len(), 0);
-
-        // Ray originates inside of the sphere
-        let r = Ray::new(Point::new(0, 0, 0), Vector::new(0, 0, 1));
-        let s = Sphere::new();
-        let i = r.intersect(&s);
-        assert_eq!(i.len(), 2);
-        assert_eq!(i[0].t, -1.0);
-        assert_eq!(i[1].t, 1.0);
-
-        // Sphere is behind a ray
-        let r = Ray::new(Point::new(0, 0, 5), Vector::new(0, 0, 1));
-        let s = Sphere::new();
-        let i = r.intersect(&s);
-        assert_eq!(i.len(), 2);
-        assert_eq!(i[0].t, -6.0);
-        assert_eq!(i[1].t, -4.0);
-
-        // Intersecting a scaled sphere with a ray
-        let r = Ray::new(Point::new(0, 0, -5), Vector::new(0, 0, 1));
-        let s = Sphere::new();
-        let s = s.transform(Matrix::scale(2, 2, 2));
-        let i = r.intersect(&s);
-
-        assert_eq!(i.len(), 2);
-        assert_eq!(i[0].t, 3.0);
-        assert_eq!(i[1].t, 7.0);
-
-        // Intersecting a translated sphere with a ray
-        let r = Ray::new(Point::new(0, 0, -5), Vector::new(0, 0, 1));
-        let s = Sphere::new();
-        let s = s.transform(Matrix::translate(5, 0, 0));
-        let i = r.intersect(&s);
-
-        assert_eq!(i.len(), 0);
     }
 
     #[test]

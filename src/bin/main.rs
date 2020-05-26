@@ -1,7 +1,8 @@
 use ::raytracer::render::{Camera, Canvas, World};
 use ::raytracer::units::color::{QuantColor, RED, WHITE};
+use ::raytracer::units::objects::{ObjectType, Shape};
 use ::raytracer::units::tuple::{Point, Tuple, Vector};
-use ::raytracer::units::{Intersection, Matrix, Ray, Sphere};
+use ::raytracer::units::{Intersection, Matrix, Ray};
 use ::raytracer::world::{tick, Environment, Material, PointLight, Projectile};
 use std::env;
 use std::f64::consts;
@@ -11,11 +12,18 @@ fn main() {
     let start = Instant::now();
     let args: Vec<String> = env::args().collect();
 
+    let (hsize, vsize, size): (usize, usize, usize) = if cfg!(debug_assertions) {
+        (100, 100, 100)
+    } else {
+        (1000, 1000, 1000)
+    };
+
     match args[1].as_ref() {
         "projectile" => simulate_projectile(),
         "canvas" => simulate_projectile_on_canvas(),
-        "shadow" => draw_shadow(400),
-        "render_world" => render_world(1000, 1000),
+        "shadow" => draw_shadow(size),
+        "render_sphere_world" => render_sphere_only_world(hsize, vsize),
+        "render_plane_world" => render_plane_world(hsize, vsize),
         _ => println!("Command not recognized!"),
     }
     let duration = start.elapsed();
@@ -79,12 +87,12 @@ fn draw_shadow(size: usize) {
     // shape.material = Material::default();
     // shape.material.color = QuantColor::new(255, 42, 255);
 
-    let shape = Sphere {
+    let shape = Shape {
         material: Material {
             color: QuantColor::new(255, 42, 255),
             ..Material::default()
         },
-        ..Sphere::default()
+        ..Shape::default()
     };
 
     let light = PointLight::new(Point::new(-10, 10, -10), WHITE);
@@ -96,7 +104,7 @@ fn draw_shadow(size: usize) {
             let position = Point::new(world_x, world_y, wall_z);
             let r = Ray::new(ray_origin, (position - ray_origin).normalize());
 
-            let xs = r.intersect(&shape);
+            let xs = shape.intersect(r);
             if !xs.is_empty() {
                 let hit = Intersection::hit(xs).unwrap();
                 let hit_point = r.position(hit.t);
@@ -114,40 +122,41 @@ fn draw_shadow(size: usize) {
     canvas.write_png("images/shadow.png");
 }
 
-fn render_world(hsize: usize, vsize: usize) {
-    let mut floor = Sphere::default();
-    floor.transform_matrix = Matrix::scale(10., 0.01, 10.);
+fn render_sphere_only_world(hsize: usize, vsize: usize) {
+    let mut floor = Shape::default();
+    floor.transformation_matrix = Matrix::scale(10., 0.01, 10.);
     floor.material.color = QuantColor::new(255, 240, 240);
     floor.material.specular = 0.;
 
-    let mut left_wall = Sphere::default();
-    left_wall.transform_matrix = Matrix::translate(0, 0, 5)
+    let mut left_wall = Shape::default();
+    left_wall.transformation_matrix = Matrix::translate(0, 0, 5)
         * Matrix::rotate_y(-consts::FRAC_PI_4)
         * Matrix::rotate_x(consts::FRAC_PI_2)
         * Matrix::scale(10., 0.01, 10.);
     left_wall.material = floor.material;
 
-    let mut right_wall = Sphere::default();
-    right_wall.transform_matrix = Matrix::translate(0, 0, 5)
+    let mut right_wall = Shape::default();
+    right_wall.transformation_matrix = Matrix::translate(0, 0, 5)
         * Matrix::rotate_y(consts::FRAC_PI_4)
         * Matrix::rotate_x(consts::FRAC_PI_2)
         * Matrix::scale(10., 0.01, 10.);
     right_wall.material = floor.material;
 
-    let mut middle = Sphere::default();
-    middle.transform_matrix = Matrix::translate(-0.5, 1., 0.5);
+    let mut middle = Shape::default();
+    middle.transformation_matrix = Matrix::translate(-0.5, 1., 0.5);
     middle.material.color = QuantColor::new(125, 255, 10);
     middle.material.diffuse = 0.7;
     middle.material.specular = 0.3;
 
-    let mut right = Sphere::default();
-    right.transform_matrix = Matrix::translate(1.5, 0.5, -0.5) * Matrix::scale(0.5, 0.5, 0.5);
+    let mut right = Shape::default();
+    right.transformation_matrix = Matrix::translate(1.5, 0.5, -0.5) * Matrix::scale(0.5, 0.5, 0.5);
     right.material.color = QuantColor::new(10, 255, 125);
     right.material.diffuse = 0.7;
     right.material.specular = 0.3;
 
-    let mut left = Sphere::default();
-    left.transform_matrix = Matrix::translate(-1.5, 0.5, -0.75) * Matrix::scale(0.33, 0.33, 0.33);
+    let mut left = Shape::default();
+    left.transformation_matrix =
+        Matrix::translate(-1.5, 0.5, -0.75) * Matrix::scale(0.33, 0.33, 0.33);
     left.material.color = QuantColor::new(255, 25, 10);
     left.material.diffuse = 0.7;
     left.material.specular = 0.3;
@@ -166,4 +175,45 @@ fn render_world(hsize: usize, vsize: usize) {
     let canvas = camera.render(world);
 
     canvas.write_png("./images/render_world.png");
+}
+
+fn render_plane_world(hsize: usize, vsize: usize) {
+    let mut floor = Shape::new(ObjectType::Plane);
+    // floor.transformation_matrix = Matrix::scale(10., 0.01, 10.);
+    floor.material.color = QuantColor::new(255, 240, 240);
+    // floor.material.specular = 0.;
+
+    let mut middle = Shape::default();
+    middle.transformation_matrix = Matrix::translate(-0.5, 1., 0.5);
+    middle.material.color = QuantColor::new(125, 255, 10);
+    middle.material.diffuse = 0.7;
+    middle.material.specular = 0.3;
+
+    let mut right = Shape::default();
+    right.transformation_matrix = Matrix::translate(1.5, 0.5, -0.5) * Matrix::scale(0.5, 0.5, 0.5);
+    right.material.color = QuantColor::new(10, 255, 125);
+    right.material.diffuse = 0.7;
+    right.material.specular = 0.3;
+
+    let mut left = Shape::default();
+    left.transformation_matrix =
+        Matrix::translate(-1.5, 0.5, -0.75) * Matrix::scale(0.33, 0.33, 0.33);
+    left.material.color = QuantColor::new(255, 25, 10);
+    left.material.diffuse = 0.7;
+    left.material.specular = 0.3;
+
+    let mut camera = Camera::new(hsize, vsize, consts::FRAC_PI_3);
+    camera.transform = Matrix::view_transform(
+        Point::new(0., 1.5, -5.),
+        Point::new(0, 1, 0),
+        Vector::new(0, 1, 0),
+    );
+
+    let mut world = World::new();
+    world.light = Some(PointLight::new(Point::new(-10, 10, -10), WHITE));
+    world.objects = vec![left, right, middle, floor];
+
+    let canvas = camera.render(world);
+
+    canvas.write_png("./images/render_plane_world.png");
 }
