@@ -15,7 +15,7 @@ fn main() {
         "projectile" => simulate_projectile(),
         "canvas" => simulate_projectile_on_canvas(),
         "shadow" => draw_shadow(400),
-        "render_world" => render_world(),
+        "render_world" => render_world(1000, 1000),
         _ => println!("Command not recognized!"),
     }
     let duration = start.elapsed();
@@ -105,7 +105,7 @@ fn draw_shadow(size: usize) {
                 let color = hit
                     .object
                     .material
-                    .lightning(light, hit_point, eyev, hit_normal)
+                    .lightning(light, hit_point, eyev, hit_normal, false)
                     .clamp();
                 canvas.write_pixel(x, y, color);
             }
@@ -114,7 +114,7 @@ fn draw_shadow(size: usize) {
     canvas.write_png("images/shadow.png");
 }
 
-fn render_world() {
+fn render_world(hsize: usize, vsize: usize) {
     let mut floor = Sphere::default();
     floor.transform_matrix = Matrix::scale(10., 0.01, 10.);
     floor.material.color = QuantColor::new(255, 240, 240);
@@ -152,7 +152,7 @@ fn render_world() {
     left.material.diffuse = 0.7;
     left.material.specular = 0.3;
 
-    let mut camera = Camera::new(300, 250, consts::FRAC_PI_3);
+    let mut camera = Camera::new(hsize, vsize, consts::FRAC_PI_3);
     camera.transform = Matrix::view_transform(
         Point::new(0., 1.5, -5.),
         Point::new(0, 1, 0),

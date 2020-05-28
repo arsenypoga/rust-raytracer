@@ -21,6 +21,8 @@ pub struct Computations<'a> {
     pub object: &'a Sphere,
     /// Point of intersections
     pub point: Point,
+    /// Point for approximation
+    pub over_point: Point,
     /// Eye vector
     pub eyev: Vector,
     /// Normal vector at the point
@@ -36,23 +38,14 @@ impl<'a> Intersection<'a> {
 
     /// Returns hits from given intersection vector
     pub fn hit(xs: Vec<Intersection>) -> Option<Intersection> {
-        if xs.is_empty() {
+        let mut clone = xs.clone();
+        clone.retain(|i| i.t > 0.);
+        clone.sort_by(|a, b| a.t.partial_cmp(&b.t).unwrap_or(Ordering::Equal));
+
+        if clone.is_empty() {
             None
-        } else if xs.len() == 1 {
-            Some(xs[0])
         } else {
-            let i1 = xs[0];
-            let i2 = xs[1];
-            // let is_i1_positive =
-            if (((i1.t > 0.) && (i2.t > 0.)) && (i1.t < i2.t)) || ((i1.t > 0.) && (i2.t < 0.)) {
-                Some(i1)
-            } else if (((i1.t > 0.) && (i2.t > 0.)) && (i1.t > i2.t))
-                || ((i1.t < 0.) && (i2.t > 0.))
-            {
-                Some(i2)
-            } else {
-                None
-            }
+            Some(clone[0])
         }
     }
 
@@ -72,6 +65,7 @@ impl<'a> Intersection<'a> {
             eyev: -r.direction,
             normalv,
             inside,
+            over_point: position + normalv * utils::EPSILON,
         }
     }
 }
@@ -112,6 +106,7 @@ impl<'a> PartialOrd for Intersection<'a> {
 mod tests {
     use super::*;
     use crate::units::tuple::Tuple;
+    use crate::units::Matrix;
     #[test]
     fn hit() {
         // The hit, when all intersections have positive t
@@ -166,5 +161,14 @@ mod tests {
         assert_eq!(comps.eyev, Vector::new(0, 0, -1));
         assert_eq!(comps.normalv, Vector::new(0, 0, -1));
         assert!(comps.inside);
+
+        // The hit should offset the point
+        let r = Ray::new(Point::new(0, 0, -5), Vector::new(0, 0, 1));
+        let mut shape = Sphere::new();
+        shape.transform_matrix = Matrix::translate(0, 0, 1);
+        let i = Intersection::new(5., &shape);
+        let comps = i.computations(r);
+        assert!(comps.over_point.z < -utils::EPSILON / 2.);
+        assert!(comps.point.z > comps.over_point.z);
     }
 }

@@ -43,6 +43,7 @@ impl Material {
         position: Point,
         eyev: Vector,
         normalv: Vector,
+        in_shadow: bool,
     ) -> QuantColor {
         let intensity = QuantColor::new(
             light.intensity.r / 255,
@@ -72,7 +73,11 @@ impl Material {
                 specular = (light.intensity * self.specular as f64 * factor).clamp();
             }
         }
-        (ambient + diffuse + specular)
+        if in_shadow {
+            ambient
+        } else {
+            ambient + diffuse + specular
+        }
     }
 }
 
@@ -104,35 +109,42 @@ mod tests {
         let eyev = Vector::new(0, 0, -1);
         let normalv = Vector::new(0, 0, -1);
         let light = PointLight::new(Point::new(0, 0, -10), QuantColor::new(255, 255, 255));
-        let res = m.lightning(light, p, eyev, normalv);
+        let res = m.lightning(light, p, eyev, normalv, false);
         assert_eq!(res, QuantColor::new(483, 483, 483));
 
         // Lighting with the eye between light and surface, eye offset 45°
         let eyev = Vector::new(0., (2.0 as f64).sqrt() / 2., (2.0 as f64).sqrt() / 2.);
         let normalv = Vector::new(0, 0, -1);
         let light = PointLight::new(Point::new(0, 0, -10), WHITE);
-        let res = m.lightning(light, p, eyev, normalv).clamp();
+        let res = m.lightning(light, p, eyev, normalv, false).clamp();
         assert_eq!(res, QuantColor::new(254, 254, 254));
 
         // Lighting with eye opposite surface, light offset 45°
         let eyev = Vector::new(0, 0, -1);
         let normalv = Vector::new(0, 0, -1);
         let light = PointLight::new(Point::new(0, 10, -10), QuantColor::new(255, 255, 255));
-        let res = m.lightning(light, p, eyev, normalv);
+        let res = m.lightning(light, p, eyev, normalv, false);
         assert_eq!(res, QuantColor::new(186, 186, 186));
 
         // Lighting with eye in the path of the reflection vector
         let eyev = Vector::new(0., -(2.0 as f64).sqrt() / 2., -(2.0 as f64).sqrt() / 2.);
         let normalv = Vector::new(0, 0, -1);
         let light = PointLight::new(Point::new(0, 10, -10), QuantColor::new(255, 255, 255));
-        let res = m.lightning(light, p, eyev, normalv);
+        let res = m.lightning(light, p, eyev, normalv, false);
         assert_eq!(res, QuantColor::new(415, 415, 415));
 
         // Lighting with the light behind the surface
         let eyev = Vector::new(0, 0, -1);
         let normalv = Vector::new(0, 0, -1);
         let light = PointLight::new(Point::new(0, 10, 10), QuantColor::new(255, 255, 255));
-        let res = m.lightning(light, p, eyev, normalv);
+        let res = m.lightning(light, p, eyev, normalv, false);
+        assert_eq!(res, QuantColor::new(25, 25, 25));
+
+        // Lighting with the surface in shadow
+        let eyev = Vector::new(0, 0, -1);
+        let normalv = Vector::new(0, 0, -1);
+        let light = PointLight::new(Point::new(0, 10, 10), QuantColor::new(255, 255, 255));
+        let res = m.lightning(light, p, eyev, normalv, true);
         assert_eq!(res, QuantColor::new(25, 25, 25));
     }
 }
