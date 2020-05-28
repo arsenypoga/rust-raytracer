@@ -1,10 +1,12 @@
 use crate::units::color::{QuantColor, BLACK, WHITE};
 use crate::units::tuple::{Point, Tuple, Vector};
-use crate::units::{Computations, Intersection, Matrix, Ray, Sphere};
+use crate::units::{Computations, Intersection, Matrix, Ray};
+
+use crate::units::objects::Shape;
 use crate::world::{Material, PointLight};
 pub struct World {
     /// vector of objects in the world.
-    pub objects: Vec<Sphere>,
+    pub objects: Vec<Shape>,
     /// World light
     pub light: Option<PointLight>,
 }
@@ -22,7 +24,7 @@ impl World {
     pub fn intersect(&self, ray: Ray) -> Vec<Intersection> {
         let mut intersections: Vec<Intersection> = Vec::new();
         for o in &self.objects {
-            intersections.extend(&ray.intersect(&o));
+            intersections.extend(o.intersect(ray));
         }
         intersections.sort();
         intersections
@@ -72,19 +74,19 @@ impl World {
 impl Default for World {
     fn default() -> World {
         let light = PointLight::new(Point::new(-10, 10, -10), WHITE);
-        let s1 = Sphere {
+        let s1 = Shape {
             material: Material {
                 color: QuantColor::new(204, 255, 153),
                 diffuse: 0.7,
                 specular: 0.2,
                 ..Material::default()
             },
-            ..Sphere::default()
+            ..Shape::default()
         };
 
-        let s2 = Sphere {
-            transform_matrix: Matrix::scale(0.5, 0.5, 0.5),
-            ..Sphere::default()
+        let s2 = Shape {
+            transformation_matrix: Matrix::scale(0.5, 0.5, 0.5),
+            ..Shape::default()
         };
 
         World {
@@ -97,7 +99,9 @@ impl Default for World {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::units::objects::ObjectType;
     use crate::units::tuple::Vector;
+
     #[test]
     fn new() {
         let w = World::new();
@@ -139,9 +143,9 @@ mod tests {
         let mut w = World::new();
         let l = PointLight::new(Point::new(0, 0, -10), WHITE);
         w.light = Some(l);
-        let mut s1 = Sphere::new();
-        s1.transform_matrix = Matrix::translate(0, 0, 10);
-        w.objects = vec![Sphere::new(), s1];
+        let mut s1 = Shape::new(ObjectType::Sphere);
+        s1.transformation_matrix = Matrix::translate(0, 0, 10);
+        w.objects = vec![Shape::new(ObjectType::Sphere), s1];
 
         let r = Ray::new(Point::new(0, 0, 5), Vector::new(0, 0, 1));
         let i = Intersection::new(0.5, &s1);

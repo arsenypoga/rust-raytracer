@@ -3,6 +3,13 @@ use crate::units::utils;
 use crate::units::Matrix;
 use std::ops;
 
+pub const ORIGIN: Point = Point {
+    x: 0.,
+    y: 0.,
+    z: 0.,
+    w: 1.,
+};
+
 #[derive(Debug, Copy, Clone)]
 pub struct Point {
     pub x: f64,

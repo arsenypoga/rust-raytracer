@@ -1,24 +1,23 @@
 //! Intersection operations
+use crate::units::objects::Shape;
 use crate::units::tuple::{Point, Vector};
 use crate::units::utils;
 use crate::units::Ray;
-use crate::units::Sphere;
 use std::cmp::Ordering;
-
 /// Intersection
 #[derive(Debug, Clone, Copy)]
 pub struct Intersection<'a> {
     /// Point of intersection
     pub t: f64,
     /// Intersected object
-    pub object: &'a Sphere,
+    pub object: &'a Shape,
 }
 
 pub struct Computations<'a> {
     /// T of intersection for the ray
     pub t: f64,
     /// Object of computations
-    pub object: &'a Sphere,
+    pub object: &'a Shape,
     /// Point of intersections
     pub point: Point,
     /// Point for approximation
@@ -32,7 +31,7 @@ pub struct Computations<'a> {
 
 impl<'a> Intersection<'a> {
     /// Creates new Intersection
-    pub fn new(t: f64, object: &'a Sphere) -> Intersection {
+    pub fn new(t: f64, object: &'a Shape) -> Intersection<'a> {
         Intersection { t, object }
     }
 
@@ -105,12 +104,13 @@ impl<'a> PartialOrd for Intersection<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::units::objects::ObjectType;
     use crate::units::tuple::Tuple;
     use crate::units::Matrix;
     #[test]
     fn hit() {
         // The hit, when all intersections have positive t
-        let s = Sphere::new();
+        let s = Shape::new(ObjectType::Sphere);
         let i1 = Intersection::new(1., &s);
         let i2 = Intersection::new(2., &s);
         let xs = vec![i1, i2];
@@ -119,7 +119,8 @@ mod tests {
         assert_eq!(x, i1);
 
         // The hit, when some intersections have negative t
-        let s = Sphere::new();
+        let s = Shape::new(ObjectType::Sphere);
+
         let i1 = Intersection::new(-1., &s);
         let i2 = Intersection::new(1., &s);
         let xs = vec![i1, i2];
@@ -128,7 +129,7 @@ mod tests {
         assert_eq!(x, i2);
 
         // The hit, when all intersections have negative t
-        let s = Sphere::new();
+        let s = Shape::new(ObjectType::Sphere);
         let i1 = Intersection::new(-1., &s);
         let i2 = Intersection::new(-2., &s);
         let xs = vec![i1, i2];
@@ -140,7 +141,7 @@ mod tests {
     fn computations() {
         // The hit, when an intersection occurs on the outside
         let r = Ray::new(Point::new(0, 0, -5), Vector::new(0, 0, 1));
-        let shape = Sphere::default();
+        let shape = Shape::new(ObjectType::Sphere);
         let i = Intersection::new(4., &shape);
         let comps = i.computations(r);
         assert_eq!(comps.t, i.t);
@@ -152,7 +153,7 @@ mod tests {
 
         // The hit, when an intersection occurs on the inside
         let r = Ray::new(Point::new(0, 0, 0), Vector::new(0, 0, 1));
-        let shape = Sphere::default();
+        let shape = Shape::new(ObjectType::Sphere);
         let i = Intersection::new(1., &shape);
         let comps = i.computations(r);
         assert_eq!(comps.t, i.t);
@@ -164,8 +165,9 @@ mod tests {
 
         // The hit should offset the point
         let r = Ray::new(Point::new(0, 0, -5), Vector::new(0, 0, 1));
-        let mut shape = Sphere::new();
-        shape.transform_matrix = Matrix::translate(0, 0, 1);
+        let mut shape = Shape::new(ObjectType::Sphere);
+
+        shape.transformation_matrix = Matrix::translate(0, 0, 1);
         let i = Intersection::new(5., &shape);
         let comps = i.computations(r);
         assert!(comps.over_point.z < -utils::EPSILON / 2.);

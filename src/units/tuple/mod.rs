@@ -1,6 +1,6 @@
 pub mod point;
 pub mod vector;
-pub use point::Point;
+pub use point::{Point, ORIGIN};
 use std::ops;
 pub use vector::Vector;
 
