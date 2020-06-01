@@ -1,13 +1,13 @@
 use crate::render::{Canvas, World};
 use crate::units::tuple::{Point, Tuple};
 use crate::units::Ray;
-use crate::units::{Matrix, IDENTITY_MATRIX};
+use crate::units::{Matrix, Transformable, IDENTITY_MATRIX};
 
 pub struct Camera {
     pub hsize: usize,
     pub vsize: usize,
     pub field_of_view: f64,
-    pub transform: Matrix,
+    pub transformation_matrix: Matrix,
     pub pixel_size: f64,
     pub half_height: f64,
     pub half_width: f64,
@@ -27,7 +27,7 @@ impl Camera {
             hsize,
             vsize,
             field_of_view,
-            transform: IDENTITY_MATRIX,
+            transformation_matrix: IDENTITY_MATRIX,
             pixel_size: (half_width * 2.) / (hsize as f64),
             half_height,
             half_width,
@@ -41,7 +41,7 @@ impl Camera {
         let world_x = self.half_width as f64 - xoffset;
         let world_y = self.half_height as f64 - yoffset;
 
-        let invert_transform = self.transform.invert().unwrap();
+        let invert_transform = self.transformation_matrix.invert().unwrap();
         let pixel = Point::from(invert_transform * Point::new(world_x, world_y, -1.));
         let origin = Point::from(invert_transform * Point::new(0, 0, 0));
         let direction = (pixel - origin).normalize();
@@ -61,6 +61,60 @@ impl Camera {
     }
 }
 
+impl Transformable for Camera {
+    fn translate<T: Into<f64>>(&self, x: T, y: T, z: T) -> Self {
+        Camera {
+            transformation_matrix: self.transformation_matrix * Matrix::translate(x, y, z),
+            ..*self
+        }
+    }
+    fn scale<T: Into<f64>>(&self, x: T, y: T, z: T) -> Self {
+        Camera {
+            transformation_matrix: self.transformation_matrix * Matrix::scale(x, y, z),
+            ..*self
+        }
+    }
+    fn rotate_x<T: Into<f64> + Copy>(&self, r: T) -> Self {
+        Camera {
+            transformation_matrix: self.transformation_matrix * Matrix::rotate_x(r),
+            ..*self
+        }
+    }
+    fn rotate_y<T: Into<f64> + Copy>(&self, r: T) -> Self {
+        Camera {
+            transformation_matrix: self.transformation_matrix * Matrix::rotate_y(r),
+            ..*self
+        }
+    }
+    fn rotate_z<T: Into<f64> + Copy>(&self, r: T) -> Self {
+        Camera {
+            transformation_matrix: self.transformation_matrix * Matrix::rotate_z(r),
+            ..*self
+        }
+    }
+    fn skew<T: Into<f64> + Copy>(
+        &self,
+        x_to_y: T,
+        x_to_z: T,
+        y_to_x: T,
+        y_to_z: T,
+        z_to_x: T,
+        z_to_y: T,
+    ) -> Self {
+        Camera {
+            transformation_matrix: self.transformation_matrix
+                * Matrix::skew(x_to_y, x_to_z, y_to_x, y_to_z, z_to_x, z_to_y),
+            ..*self
+        }
+    }
+    fn transform(&self, transformation_matrix: Matrix) -> Self {
+        Camera {
+            transformation_matrix,
+            ..*self
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -75,7 +129,7 @@ mod tests {
         assert_eq!(c.hsize, 160);
         assert_eq!(c.vsize, 120);
         assert_eq!(c.field_of_view, consts::FRAC_PI_2);
-        assert_eq!(c.transform, IDENTITY_MATRIX);
+        assert_eq!(c.transformation_matrix, IDENTITY_MATRIX);
 
         // Pixel on a horizontal canvas
         let c = Camera::new(200, 125, consts::FRAC_PI_2);
@@ -104,8 +158,10 @@ mod tests {
         assert_eq!(r.direction, Vector::new(0.66519, 0.33259, -0.66851));
 
         // Constructing a ray when the camera is transformed
-        let mut c = Camera::new(201, 101, consts::FRAC_PI_2);
-        c.transform = Matrix::rotate_y(consts::FRAC_PI_4) * Matrix::translate(0, -2, 5);
+        let c = Camera::new(201, 101, consts::FRAC_PI_2)
+            .rotate_y(consts::FRAC_PI_4)
+            .translate(0, -2, 5);
+        // .transform(Matrix::rotate_y(consts::FRAC_PI_4) * Matrix::translate(0, -2, 5));
         let r = c.ray_for_pixel(100, 50);
 
         assert_eq!(r.origin, Point::new(0, 2, -5));
@@ -118,12 +174,11 @@ mod tests {
     #[test]
     fn render() {
         let w = World::default();
-        let mut c = Camera::new(11, 11, consts::FRAC_PI_2);
-        c.transform = Matrix::view_transform(
+        let c = Camera::new(11, 11, consts::FRAC_PI_2).transform(Matrix::view_transform(
             Point::new(0, 0, -5),
             Point::new(0, 0, 0),
             Vector::new(0, 1, 0),
-        );
+        ));
         let image = c.render(w);
 
         assert_eq!(image.get_pixel(5, 5), QuantColor::new(96, 120, 72));

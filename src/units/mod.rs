@@ -7,5 +7,5 @@ pub mod tuple;
 pub mod utils;
 
 pub use intersect::{Computations, Intersection};
-pub use matrix::{Matrix, IDENTITY_MATRIX};
+pub use matrix::{Matrix, Transformable, IDENTITY_MATRIX};
 pub use ray::Ray;

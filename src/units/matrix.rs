@@ -497,6 +497,24 @@ impl From<[[f64; 4]; 4]> for Matrix {
     }
 }
 
+pub trait Transformable {
+    fn transform(&self, transformation_matrix: Matrix) -> Self;
+    fn translate<T: Into<f64>>(&self, x: T, y: T, z: T) -> Self;
+    fn scale<T: Into<f64>>(&self, x: T, y: T, z: T) -> Self;
+    fn rotate_x<T: Into<f64> + Copy>(&self, r: T) -> Self;
+    fn rotate_y<T: Into<f64> + Copy>(&self, r: T) -> Self;
+    fn rotate_z<T: Into<f64> + Copy>(&self, r: T) -> Self;
+    fn skew<T: Into<f64> + Copy>(
+        &self,
+        x_to_y: T,
+        x_to_z: T,
+        y_to_x: T,
+        y_to_z: T,
+        z_to_x: T,
+        z_to_y: T,
+    ) -> Self;
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
