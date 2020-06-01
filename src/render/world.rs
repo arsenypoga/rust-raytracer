@@ -33,10 +33,9 @@ impl World {
     /// Compute shading in the world.
     pub fn shade_hit(&self, c: Computations) -> QuantColor {
         c.object
-            .material
             .lightning(
                 self.light.unwrap(),
-                c.point,
+                c.over_point,
                 c.eyev,
                 c.normalv,
                 self.is_shadowed(c.over_point),
@@ -68,6 +67,20 @@ impl World {
         let hit = Intersection::hit(intersections);
 
         hit.is_some() && hit.unwrap().t < distance
+    }
+
+    pub fn set_light(&self, light: Option<PointLight>) -> World {
+        World {
+            objects: self.objects.to_owned(),
+            light,
+        }
+    }
+
+    pub fn set_objects(&self, objects: Vec<Shape>) -> World {
+        World {
+            objects,
+            light: self.light,
+        }
     }
 }
 

@@ -1,15 +1,14 @@
-pub use crate::units::tuple::{Point, Tuple, Vector, ORIGIN};
-pub use crate::units::utils;
-use crate::units::{Intersection, Matrix, Ray, IDENTITY_MATRIX};
-pub use crate::world::Material;
-
+use crate::units::color::{QuantColor, BLACK};
+use crate::units::tuple::{Point, Tuple, Vector, ORIGIN};
+use crate::units::utils;
+use crate::units::{Intersection, Matrix, Ray, Transformable, IDENTITY_MATRIX};
+use crate::world::{Material, PointLight};
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum ObjectType {
     Sphere,
     Plane,
 }
 
-impl ObjectType {}
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Shape {
     pub transformation_matrix: Matrix,
@@ -32,6 +31,10 @@ impl Shape {
             ObjectType::Sphere => self.intersect_sphere(local_ray),
             ObjectType::Plane => self.intersect_plane(local_ray),
         }
+    }
+
+    pub fn set_material(&self, material: Material) -> Shape {
+        Shape { material, ..*self }
     }
 
     fn intersect_sphere(&self, local_ray: Ray) -> Vec<Intersection> {
@@ -84,10 +87,109 @@ impl Shape {
             .normalize()
     }
 
-    pub fn transform(&self, matrix: Matrix) -> Shape {
+    pub fn lightning(
+        &self,
+        light: PointLight,
+        position: Point,
+        eyev: Vector,
+        normalv: Vector,
+        in_shadow: bool,
+    ) -> QuantColor {
+        let intensity = QuantColor::new(
+            light.intensity.r / 255,
+            light.intensity.g / 255,
+            light.intensity.b / 255,
+        );
+        let color = if self.material.pattern.is_some() {
+            self.material
+                .pattern
+                .unwrap()
+                .color_at_object(*self, position)
+        } else {
+            self.material.color
+        };
+
+        let effective_color = (color * intensity).clamp();
+        let lightv = (light.position - position).normalize();
+
+        let ambient = (effective_color * self.material.ambient as f64).clamp();
+        let diffuse;
+        let specular;
+
+        let light_dot_normal = lightv.dot(normalv);
+        if light_dot_normal < 0. {
+            diffuse = BLACK;
+            specular = BLACK;
+        } else {
+            diffuse = (effective_color * self.material.diffuse as f64 * light_dot_normal).clamp();
+            let reflectv = (-lightv).reflect(normalv);
+            let reflect_dot_eye = reflectv.dot(eyev);
+
+            if reflect_dot_eye <= 0. {
+                specular = BLACK;
+            } else {
+                let factor = reflect_dot_eye.powf(self.material.shine);
+                specular = (light.intensity * self.material.specular as f64 * factor).clamp();
+            }
+        }
+        if in_shadow {
+            ambient
+        } else {
+            ambient + diffuse + specular
+        }
+    }
+}
+
+impl Transformable for Shape {
+    fn translate<T: Into<f64>>(&self, x: T, y: T, z: T) -> Shape {
         Shape {
-            transformation_matrix: matrix,
-            ..Shape::default()
+            transformation_matrix: self.transformation_matrix * Matrix::translate(x, y, z),
+            ..*self
+        }
+    }
+    fn scale<T: Into<f64>>(&self, x: T, y: T, z: T) -> Shape {
+        Shape {
+            transformation_matrix: self.transformation_matrix * Matrix::scale(x, y, z),
+            ..*self
+        }
+    }
+    fn rotate_x<T: Into<f64> + Copy>(&self, r: T) -> Shape {
+        Shape {
+            transformation_matrix: self.transformation_matrix * Matrix::rotate_x(r),
+            ..*self
+        }
+    }
+    fn rotate_y<T: Into<f64> + Copy>(&self, r: T) -> Shape {
+        Shape {
+            transformation_matrix: self.transformation_matrix * Matrix::rotate_y(r),
+            ..*self
+        }
+    }
+    fn rotate_z<T: Into<f64> + Copy>(&self, r: T) -> Shape {
+        Shape {
+            transformation_matrix: self.transformation_matrix * Matrix::rotate_z(r),
+            ..*self
+        }
+    }
+    fn skew<T: Into<f64> + Copy>(
+        &self,
+        x_to_y: T,
+        x_to_z: T,
+        y_to_x: T,
+        y_to_z: T,
+        z_to_x: T,
+        z_to_y: T,
+    ) -> Shape {
+        Shape {
+            transformation_matrix: self.transformation_matrix
+                * Matrix::skew(x_to_y, x_to_z, y_to_x, y_to_z, z_to_x, z_to_y),
+            ..*self
+        }
+    }
+    fn transform(&self, transformation_matrix: Matrix) -> Self {
+        Shape {
+            transformation_matrix,
+            ..*self
         }
     }
 }
@@ -105,6 +207,7 @@ impl Default for Shape {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::units::color::WHITE;
     use std::f64::consts;
     #[test]
     fn new_sphere() {
@@ -279,5 +382,53 @@ mod tests {
         assert_eq!(p.normal(Point::new(0, 0, 0)), Vector::new(0, 1, 0));
         assert_eq!(p.normal(Point::new(10, 0, -10)), Vector::new(0, 1, 0));
         assert_eq!(p.normal(Point::new(-5, 0, 150)), Vector::new(0, 1, 0));
+    }
+
+    #[test]
+    fn lightning() {
+        let o = Shape::default();
+        let p = Point::new(0, 0, 0);
+
+        // Lighting with the eye between the light and the surface
+        let eyev = Vector::new(0, 0, -1);
+        let normalv = Vector::new(0, 0, -1);
+        let light = PointLight::new(Point::new(0, 0, -10), QuantColor::new(255, 255, 255));
+        let res = o.lightning(light, p, eyev, normalv, false);
+        assert_eq!(res, QuantColor::new(483, 483, 483));
+
+        // Lighting with the eye between light and surface, eye offset 45°
+        let eyev = Vector::new(0., (2.0 as f64).sqrt() / 2., (2.0 as f64).sqrt() / 2.);
+        let normalv = Vector::new(0, 0, -1);
+        let light = PointLight::new(Point::new(0, 0, -10), WHITE);
+        let res = o.lightning(light, p, eyev, normalv, false).clamp();
+        assert_eq!(res, QuantColor::new(254, 254, 254));
+
+        // Lighting with eye opposite surface, light offset 45°
+        let eyev = Vector::new(0, 0, -1);
+        let normalv = Vector::new(0, 0, -1);
+        let light = PointLight::new(Point::new(0, 10, -10), QuantColor::new(255, 255, 255));
+        let res = o.lightning(light, p, eyev, normalv, false);
+        assert_eq!(res, QuantColor::new(186, 186, 186));
+
+        // Lighting with eye in the path of the reflection vector
+        let eyev = Vector::new(0., -(2.0 as f64).sqrt() / 2., -(2.0 as f64).sqrt() / 2.);
+        let normalv = Vector::new(0, 0, -1);
+        let light = PointLight::new(Point::new(0, 10, -10), QuantColor::new(255, 255, 255));
+        let res = o.lightning(light, p, eyev, normalv, false);
+        assert_eq!(res, QuantColor::new(415, 415, 415));
+
+        // Lighting with the light behind the surface
+        let eyev = Vector::new(0, 0, -1);
+        let normalv = Vector::new(0, 0, -1);
+        let light = PointLight::new(Point::new(0, 10, 10), QuantColor::new(255, 255, 255));
+        let res = o.lightning(light, p, eyev, normalv, false);
+        assert_eq!(res, QuantColor::new(25, 25, 25));
+
+        // Lighting with the surface in shadow
+        let eyev = Vector::new(0, 0, -1);
+        let normalv = Vector::new(0, 0, -1);
+        let light = PointLight::new(Point::new(0, 10, 10), QuantColor::new(255, 255, 255));
+        let res = o.lightning(light, p, eyev, normalv, true);
+        assert_eq!(res, QuantColor::new(25, 25, 25));
     }
 }
