@@ -33,7 +33,7 @@ impl PatternType {
     }
 
     fn gradient_color(&self, point: Point, color_a: QuantColor, color_b: QuantColor) -> QuantColor {
-        let distance = color_b - color_a;
+        let distance: QuantColor = color_b - color_a;
         let fraction = point.x - point.x.floor();
 
         color_a + (distance * fraction)

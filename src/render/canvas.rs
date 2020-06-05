@@ -16,6 +16,11 @@ pub struct Canvas {
     pub pixels: Vec<Vec<QuantColor>>,
 }
 
+pub struct CanvasPart {
+    pub size: usize,
+    pub pixels: Vec<Vec<QuantColor>>,
+}
+
 impl Canvas {
     /// Returns new blank canvas of given width and height
     ///

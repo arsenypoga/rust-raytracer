@@ -10,4 +10,5 @@ I have coded quite a bit of it, but decided to upload each chapter in a clean wa
 
 ## Dependencies
 
-I only have a single depency that is required for build - `image-rs`. Because rust Standard Library lacks any kind of image processing and I dislike .ppm files.
+* `image-rs` - aka "I simply hate working with PPM files." And you can't really flex with PPM's
+* `rayon` - image rendering improvements. (I am stupid and have no idea how to actually make this code threaded, so instead I am trying to clobber this using parallelism. Shockingly performance improvements are incredible. World rendering with rayon is only 15s for the canvas of 100/100 while without it the average render time is 40s. In the release with the canvas of 1000/1000 pixels the rendering without rayon is 120s average, with rayon it averages to 50s.
