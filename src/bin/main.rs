@@ -183,8 +183,8 @@ fn render_plane_world(hsize: usize, vsize: usize) {
             Material::default()
                 .set_pattern(Some(
                     Pattern::new(PatternType::Checkers(
-                        QuantColor::new(10, 255, 125),
-                        QuantColor::new(10, 40, 80),
+                        QuantColor::new(0, 0, 125),
+                        QuantColor::new(100, 40, 0),
                     ))
                     .translate(10, 0, 0)
                     .scale(0.1, 0.1, 0.1),
@@ -230,8 +230,8 @@ fn render_plane_world(hsize: usize, vsize: usize) {
                 .set_color(QuantColor::new(10, 255, 125))
                 .set_pattern(Some(
                     Pattern::new(PatternType::Gradient(
-                        QuantColor::new(10, 255, 125),
-                        QuantColor::new(10, 40, 80),
+                        QuantColor::new(100, 0, 0),
+                        QuantColor::new(0, 100, 0),
                     ))
                     .rotate_x(consts::FRAC_PI_2),
                 ))

@@ -2,7 +2,9 @@ use crate::render::{Canvas, World};
 use crate::units::tuple::{Point, Tuple};
 use crate::units::Ray;
 use crate::units::{Matrix, Transformable, IDENTITY_MATRIX};
-
+use rayon::prelude::*;
+use std::sync::Mutex;
+// use std::thread::
 pub struct Camera {
     pub hsize: usize,
     pub vsize: usize,
@@ -49,15 +51,16 @@ impl Camera {
     }
 
     pub fn render(&self, world: World) -> Canvas {
-        let mut image = Canvas::new(self.hsize, self.vsize);
-        for y in 0..image.height {
-            for x in 0..image.width {
+        let canvas = Mutex::new(Canvas::new(self.hsize, self.vsize));
+        (0..self.hsize).into_par_iter().for_each(|y| {
+            (0..self.vsize).into_par_iter().for_each(|x| {
                 let ray = self.ray_for_pixel(x, y);
                 let color = world.color_at(ray);
-                image.write_pixel(x, y, color);
-            }
-        }
-        image
+                let mut canvas = canvas.lock().unwrap();
+                canvas.write_pixel(x, y, color);
+            })
+        });
+        canvas.into_inner().unwrap()
     }
 }
 
@@ -117,7 +120,6 @@ impl Transformable for Camera {
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
     use crate::units::color::QuantColor;
     use crate::units::tuple::{Tuple, Vector};
