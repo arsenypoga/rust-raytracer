@@ -55,7 +55,7 @@ impl Camera {
         (0..self.hsize).into_par_iter().for_each(|y| {
             (0..self.vsize).into_par_iter().for_each(|x| {
                 let ray = self.ray_for_pixel(x, y);
-                let color = world.color_at(ray);
+                let color = world.color_at(ray, 3);
                 let mut canvas = canvas.lock().unwrap();
                 canvas.write_pixel(x, y, color);
             })

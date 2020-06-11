@@ -26,6 +26,8 @@ pub struct Computations<'a> {
     pub eyev: Vector,
     /// Normal vector at the point
     pub normalv: Vector,
+    /// Reflection vector at the point
+    pub reflectv: Vector,
     pub inside: bool,
 }
 
@@ -57,6 +59,7 @@ impl<'a> Intersection<'a> {
         if normalv.dot(eyev) < 0. {
             normalv = -normalv;
         }
+
         Computations {
             t: self.t,
             object: self.object,
@@ -65,6 +68,7 @@ impl<'a> Intersection<'a> {
             normalv,
             inside,
             over_point: position + normalv * utils::EPSILON,
+            reflectv: r.direction.reflect(normalv),
         }
     }
 }
@@ -172,5 +176,18 @@ mod tests {
         let comps = i.computations(r);
         assert!(comps.over_point.z < -utils::EPSILON / 2.);
         assert!(comps.point.z > comps.over_point.z);
+
+        // Precomputing the reflection vector
+        let s = Shape::new(ObjectType::Plane);
+        let r = Ray::new(
+            Point::new(0, 1, -1),
+            Vector::new(0., -2_f64.sqrt() / 2., 2_f64.sqrt() / 2.),
+        );
+        let i = Intersection::new(2_f64.sqrt(), &s);
+        let comps = i.computations(r);
+        assert_eq!(
+            comps.reflectv,
+            Vector::new(0., 2_f64.sqrt() / 2., 2_f64.sqrt() / 2.)
+        );
     }
 }
