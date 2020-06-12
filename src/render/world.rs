@@ -49,7 +49,7 @@ impl World {
         let intersections = self.intersect(r);
         let hits = Intersection::hit(intersections);
         match hits {
-            Some(hit) => self.shade_hit(hit.computations(r), remaining),
+            Some(hit) => self.shade_hit(hit.computations(r, vec![]), remaining),
             None => BLACK,
         }
     }
@@ -147,7 +147,7 @@ mod tests {
         let r = Ray::new(Point::new(0, 0, -5), Vector::new(0, 0, 1));
         let shape = w.objects[0];
         let i = Intersection::new(4., &shape);
-        let comps = i.computations(r);
+        let comps = i.computations(r, vec![]);
         let color = w.shade_hit(comps, 1);
         assert_eq!(color, QuantColor::new(96, 120, 72));
 
@@ -158,7 +158,7 @@ mod tests {
         let r = Ray::new(Point::new(0, 0, 0), Vector::new(0, 0, 1));
         let shape = w.objects[1];
         let i = Intersection::new(0.5, &shape);
-        let comps = i.computations(r);
+        let comps = i.computations(r, vec![]);
         let color = w.shade_hit(comps, 1);
         assert_eq!(color, QuantColor::new(229, 229, 229));
 
@@ -172,7 +172,7 @@ mod tests {
 
         let r = Ray::new(Point::new(0, 0, 5), Vector::new(0, 0, 1));
         let i = Intersection::new(0.5, &s1);
-        let comps = i.computations(r);
+        let comps = i.computations(r, vec![]);
         let color = w.shade_hit(comps, 1);
         assert_eq!(color, QuantColor::new(25, 25, 25));
 
@@ -187,7 +187,7 @@ mod tests {
             Vector::new(0., -(2_f64).sqrt() / 2., 2_f64.sqrt() / 2.),
         );
         let i = Intersection::new(2_f64.sqrt(), &s);
-        let comps = i.computations(r);
+        let comps = i.computations(r, vec![]);
         let color = w.shade_hit(comps, 1);
         assert_eq!(QuantColor::new(222, 234, 210), color);
     }
@@ -268,7 +268,7 @@ mod tests {
         let mut shape: Shape = w.objects[1];
         shape.material.ambient = 1.;
         let i = Intersection::new(1., &shape);
-        let comps = i.computations(r);
+        let comps = i.computations(r, vec![]);
         let color = w.reflect_color(comps, 1);
         assert_eq!(color, BLACK);
 
@@ -284,7 +284,7 @@ mod tests {
             Vector::new(0., -(2_f64).sqrt() / 2., 2_f64.sqrt() / 2.),
         );
         let i = Intersection::new(2_f64.sqrt(), &shape);
-        let comps = i.computations(r);
+        let comps = i.computations(r, vec![]);
         let color = w.reflect_color(comps, 1);
         assert_eq!(QuantColor::new(48, 60, 36), color);
 
@@ -299,7 +299,7 @@ mod tests {
             Vector::new(0., -(2_f64).sqrt() / 2., 2_f64.sqrt() / 2.),
         );
         let int = Intersection::new(2_f64.sqrt(), &shape);
-        let comps = i.computations(r);
+        let comps = int.computations(r, vec![]);
         let color = w.reflect_color(comps, 0);
         assert_eq!(BLACK, color);
     }

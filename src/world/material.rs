@@ -18,7 +18,12 @@ pub struct Material {
     pub specular: f64,
     /// Shine level
     pub shine: f64,
+    /// Reflect level. 1.0 is maximum reflection
     pub reflect: f64,
+    /// transparency level 0.0 is default
+    pub transparent: f64,
+    /// refractive index 1.0 is default
+    pub refractive_index: f64,
 }
 
 impl Material {
@@ -55,6 +60,20 @@ impl Material {
     pub fn set_reflect(&self, reflect: f64) -> Material {
         Material { reflect, ..*self }
     }
+
+    pub fn set_transparency(&self, transparent: f64) -> Material {
+        Material {
+            transparent,
+            ..*self
+        }
+    }
+
+    pub fn set_refractive_index(&self, refractive_index: f64) -> Material {
+        Material {
+            refractive_index,
+            ..*self
+        }
+    }
 }
 
 impl Default for Material {
@@ -67,6 +86,8 @@ impl Default for Material {
             shine: 200.,
             pattern: None,
             reflect: 0.,
+            transparent: 0.,
+            refractive_index: 1.,
         }
     }
 }
@@ -78,5 +99,7 @@ mod tests {
     fn default() {
         let m = Material::default();
         assert_eq!(m.reflect, 0.);
+        assert_eq!(m.transparent, 0.);
+        assert_eq!(m.refractive_index, 1.);
     }
 }

@@ -75,7 +75,7 @@ impl Canvas {
             panic!("x out of range, maximum width: {}", self.width);
         }
         if self.height <= y {
-            panic!("y out of range, maximum height: {}", self.height);
+            panic!("y = {} out of range, maximum height: {}", y, self.height);
         }
         self.pixels[y][x] = color;
     }

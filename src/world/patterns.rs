@@ -177,7 +177,7 @@ mod tests {
     use crate::units::tuple::Tuple;
     #[test]
     fn new() {
-        let pattern = Pattern::new(PatternType::Stripe(WHITE, BLACK));
+        // let pattern = Pattern::new(PatternType::Stripe(WHITE, BLACK));
     }
     #[test]
     fn color_at() {

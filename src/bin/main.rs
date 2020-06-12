@@ -25,6 +25,7 @@ fn main() {
         "shadow" => draw_shadow(size),
         "render_sphere_world" => render_sphere_only_world(hsize, vsize),
         "render_plane_world" => render_plane_world(hsize, vsize),
+        "render_refract_scene" => render_reflect_scene(),
         _ => println!("Command not recognized!"),
     }
     let duration = start.elapsed();
@@ -282,4 +283,76 @@ fn render_plane_world(hsize: usize, vsize: usize) {
     let canvas = camera.render(world);
 
     canvas.write_png("./images/render_plane_world.png");
+}
+
+fn render_reflect_scene() {
+    let camera = Camera::new(1000, 1000, consts::FRAC_PI_3).transform(Matrix::view_transform(
+        Point::new(-2.6, 1.5, -3.9),
+        Point::new(-0.6, 1., -0.8),
+        Vector::new(0, 1, 0),
+    ));
+
+    let light = PointLight::new(Point::new(-4.9, 4.9, -1.), WHITE);
+
+    let wall_material = Material::default()
+        .set_pattern(Some(
+            Pattern::new(PatternType::Stripe(
+                QuantColor::new(114, 114, 114),
+                QuantColor::new(140, 140, 140),
+            ))
+            .scale(0.25, 0.25, 0.25)
+            .rotate_y(consts::FRAC_PI_2),
+        ))
+        .set_ambient(0.)
+        .set_diffuse(0.4)
+        .set_specular(0.)
+        .set_reflect(0.3);
+
+    let floor = Shape::new(ObjectType::Plane).set_material(
+        Material::default()
+            .set_pattern(Some(Pattern::new(PatternType::Checkers(
+                QuantColor::new(89, 89, 89),
+                QuantColor::new(166, 166, 166),
+            ))))
+            .set_specular(0.)
+            .set_reflect(0.4),
+    );
+
+    let ceiling = Shape::new(ObjectType::Plane)
+        .translate(0, 5, 0)
+        .set_material(
+            Material::default()
+                .set_color(QuantColor::new(204, 204, 204))
+                .set_ambient(0.3)
+                .set_specular(0.),
+        );
+
+    let west_wall = Shape::new(ObjectType::Plane)
+        .rotate_y(consts::FRAC_PI_2)
+        .rotate_z(consts::FRAC_PI_2)
+        .translate(-5, 0, 0)
+        .set_material(wall_material);
+
+    let east_wall = Shape::new(ObjectType::Plane)
+        .rotate_y(consts::FRAC_PI_2)
+        .rotate_z(consts::FRAC_PI_2)
+        .translate(5, 0, 0)
+        .set_material(wall_material);
+
+    let north_wall = Shape::new(ObjectType::Plane)
+        .rotate_x(consts::FRAC_PI_2)
+        .translate(0, 0, 5)
+        .set_material(wall_material);
+
+    let south_wall = Shape::new(ObjectType::Plane)
+        .rotate_x(consts::FRAC_PI_2)
+        .translate(0, 0, -5)
+        .set_material(wall_material);
+
+    let world = World::new().set_light(Some(light)).set_objects(vec![
+        floor, ceiling, west_wall, north_wall, south_wall, east_wall,
+    ]);
+
+    let result = camera.render(world);
+    result.write_png("./images/render_refract_scene.png");
 }
