@@ -101,6 +101,12 @@ impl From<Matrix> for Point {
     }
 }
 
+impl From<Vector> for Point {
+    fn from(v: Vector) -> Self {
+        Point::new(v.x, v.y, v.z)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

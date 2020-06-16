@@ -25,7 +25,8 @@ fn main() {
         "shadow" => draw_shadow(size),
         "render_sphere_world" => render_sphere_only_world(hsize, vsize),
         "render_plane_world" => render_plane_world(hsize, vsize),
-        "render_refract_scene" => render_reflect_scene(),
+        "render_refract_scene" => render_reflect_scene(hsize, vsize),
+        "ok" => refraction_render(hsize, vsize),
         _ => println!("Command not recognized!"),
     }
     let duration = start.elapsed();
@@ -285,14 +286,14 @@ fn render_plane_world(hsize: usize, vsize: usize) {
     canvas.write_png("./images/render_plane_world.png");
 }
 
-fn render_reflect_scene() {
-    let camera = Camera::new(1000, 1000, consts::FRAC_PI_3).transform(Matrix::view_transform(
+fn render_reflect_scene(hsize: usize, vsize: usize) {
+    let camera = Camera::new(hsize, vsize, consts::FRAC_PI_3).transform(Matrix::view_transform(
         Point::new(-2.6, 1.5, -3.9),
         Point::new(-0.6, 1., -0.8),
         Vector::new(0, 1, 0),
     ));
 
-    let light = PointLight::new(Point::new(-4.9, 4.9, -1.), WHITE);
+    let light = PointLight::new(Point::new(10, 10, 0), WHITE);
 
     let wall_material = Material::default()
         .set_pattern(Some(
@@ -355,4 +356,46 @@ fn render_reflect_scene() {
 
     let result = camera.render(world);
     result.write_png("./images/render_refract_scene.png");
+}
+
+fn refraction_render(hsize: usize, vsize: usize) {
+    let mut world = World::new();
+    let light = Some(PointLight::new(Point::new(0, 10, 0), WHITE));
+    world.light = light;
+
+    let floor = Shape::new(ObjectType::Plane)
+        .set_material(Material::default().set_pattern(Some(
+            Pattern::new(PatternType::Checkers(BLACK, WHITE)).scale(-5, -5, -5),
+        )))
+        // .scale(5, 5, 5)
+        .translate(-15, 0, 0)
+        .rotate_z(consts::FRAC_PI_2);
+
+    let big_sphere = Shape::new(ObjectType::Sphere)
+        .set_material(
+            Material::default()
+                .set_transparency(1.)
+                .set_refractive_index(1.5)
+                .set_reflect(1.)
+                .set_color(WHITE),
+        )
+        .scale(4, 4, 4);
+
+    let small_sphere = Shape::new(ObjectType::Sphere).set_material(
+        Material::default()
+            .set_transparency(1.)
+            .set_refractive_index(1.)
+            .set_reflect(1.)
+            .set_color(BLACK),
+    );
+    world.objects = vec![floor, big_sphere, small_sphere];
+
+    let camera = Camera::new(hsize, vsize, consts::FRAC_PI_3).transform(Matrix::view_transform(
+        Point::new(15, 0, 0),
+        Point::new(0, 0, 0),
+        Vector::new(0, 1, 0),
+    ));
+
+    let canvas = camera.render(world);
+    canvas.write_png("./images/refractive_sphere.png");
 }

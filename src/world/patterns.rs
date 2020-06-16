@@ -2,6 +2,8 @@ use crate::units::color::{QuantColor, BLACK, WHITE};
 use crate::units::objects::Shape;
 use crate::units::tuple::Point;
 use crate::units::{Matrix, Transformable, IDENTITY_MATRIX};
+
+/// PatternType defines different patterns that the object has
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum PatternType {
     Stripe(QuantColor, QuantColor),

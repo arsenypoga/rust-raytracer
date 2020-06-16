@@ -4,7 +4,7 @@ use crate::units::Ray;
 use crate::units::{Matrix, Transformable, IDENTITY_MATRIX};
 use rayon::prelude::*;
 use std::sync::Mutex;
-// use std::thread::
+
 pub struct Camera {
     pub hsize: usize,
     pub vsize: usize,
@@ -55,7 +55,7 @@ impl Camera {
         (0..self.hsize).into_par_iter().for_each(|y| {
             (0..self.vsize).into_par_iter().for_each(|x| {
                 let ray = self.ray_for_pixel(x, y);
-                let color = world.color_at(ray, 3);
+                let color = world.color_at(ray, 5);
                 let mut canvas = canvas.lock().unwrap();
                 canvas.write_pixel(x, y, color);
             })

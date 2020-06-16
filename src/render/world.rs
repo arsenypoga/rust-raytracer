@@ -40,26 +40,52 @@ impl World {
             self.is_shadowed(c.over_point),
         );
 
-        let reflect_color = self.reflect_color(c, remaining);
-        (base_color + reflect_color).clamp()
+        let reflect_color = self.reflect_color(&c, remaining);
+        let refract_color = self.refract_color(&c, remaining);
+
+        if c.object.material.reflect > 0. && c.object.material.transparent > 0. {
+            let reflectance = c.schlick();
+            (base_color + reflect_color * reflectance + refract_color * (1. - reflectance)).clamp()
+        } else {
+            (base_color + reflect_color + refract_color).clamp()
+        }
     }
 
     /// Find color at a given ray
     pub fn color_at(&self, r: Ray, remaining: usize) -> QuantColor {
         let intersections = self.intersect(r);
-        let hits = Intersection::hit(intersections);
+        let hits = Intersection::hit(intersections.clone());
         match hits {
-            Some(hit) => self.shade_hit(hit.computations(r, vec![]), remaining),
+            Some(hit) => self.shade_hit(hit.computations(r, &intersections), remaining),
             None => BLACK,
         }
     }
-    pub fn reflect_color(&self, comps: Computations, remaining: usize) -> QuantColor {
+    pub fn reflect_color(&self, comps: &Computations, remaining: usize) -> QuantColor {
         if comps.object.material.reflect == 0. || remaining == 0 {
             BLACK
         } else {
             let reflect_ray = Ray::new(comps.over_point, comps.reflectv);
             let color = self.color_at(reflect_ray, remaining - 1);
             color * comps.object.material.reflect
+        }
+    }
+
+    pub fn refract_color(&self, comps: &Computations, remaining: usize) -> QuantColor {
+        if comps.object.material.transparent == 0. || remaining == 0 {
+            BLACK
+        } else {
+            let n_ratio = comps.n1 / comps.n2;
+            let cos_i = comps.eyev.dot(comps.normalv);
+            let sin2_t = n_ratio.powi(2) * (1. - cos_i.powi(2));
+
+            if sin2_t > 1. {
+                BLACK
+            } else {
+                let cos_t = (1. - sin2_t).sqrt();
+                let direction = comps.normalv * (n_ratio * cos_i - cos_t) - comps.eyev * n_ratio;
+                let refract_ray = Ray::new(comps.under_point, direction);
+                self.color_at(refract_ray, remaining - 1) * comps.object.material.transparent
+            }
         }
     }
 
@@ -123,7 +149,10 @@ impl Default for World {
 mod tests {
     use super::*;
     use crate::units::objects::ObjectType;
-    use crate::units::{tuple::Vector, Transformable};
+    use crate::{
+        units::{tuple::Vector, Transformable},
+        world::patterns::Pattern,
+    };
 
     #[test]
     fn new() {
@@ -147,7 +176,7 @@ mod tests {
         let r = Ray::new(Point::new(0, 0, -5), Vector::new(0, 0, 1));
         let shape = w.objects[0];
         let i = Intersection::new(4., &shape);
-        let comps = i.computations(r, vec![]);
+        let comps = i.base_computations(r);
         let color = w.shade_hit(comps, 1);
         assert_eq!(color, QuantColor::new(96, 120, 72));
 
@@ -158,7 +187,7 @@ mod tests {
         let r = Ray::new(Point::new(0, 0, 0), Vector::new(0, 0, 1));
         let shape = w.objects[1];
         let i = Intersection::new(0.5, &shape);
-        let comps = i.computations(r, vec![]);
+        let comps = i.base_computations(r);
         let color = w.shade_hit(comps, 1);
         assert_eq!(color, QuantColor::new(229, 229, 229));
 
@@ -172,7 +201,7 @@ mod tests {
 
         let r = Ray::new(Point::new(0, 0, 5), Vector::new(0, 0, 1));
         let i = Intersection::new(0.5, &s1);
-        let comps = i.computations(r, vec![]);
+        let comps = i.base_computations(r);
         let color = w.shade_hit(comps, 1);
         assert_eq!(color, QuantColor::new(25, 25, 25));
 
@@ -187,9 +216,40 @@ mod tests {
             Vector::new(0., -(2_f64).sqrt() / 2., 2_f64.sqrt() / 2.),
         );
         let i = Intersection::new(2_f64.sqrt(), &s);
-        let comps = i.computations(r, vec![]);
+        let comps = i.base_computations(r);
         let color = w.shade_hit(comps, 1);
         assert_eq!(QuantColor::new(222, 234, 210), color);
+
+        // shade_hit() with a reflective, transparent material
+        let mut w = World::default();
+        let r = Ray::new(
+            Point::new(0, 0, -3),
+            Vector::new(0., -(2_f64.sqrt() / 2.), 2_f64.sqrt() / 2.),
+        );
+        let floor = Shape::new(ObjectType::Plane)
+            .translate(0, -1, 0)
+            .set_material(
+                Material::default()
+                    .set_reflect(0.5)
+                    .set_transparency(0.5)
+                    .set_refractive_index(1.5),
+            );
+
+        w.objects.push(floor);
+
+        let ball = Shape::new(ObjectType::Sphere)
+            .translate(0., -3.5, -0.5)
+            .set_material(
+                Material::default()
+                    .set_color(QuantColor::new(255, 0, 0))
+                    .set_ambient(0.5),
+            );
+
+        w.objects.push(ball);
+        let ints = vec![Intersection::new(2_f64.sqrt(), &floor)];
+        let comps = ints[0].computations(r, &ints);
+        let c = w.shade_hit(comps, 5);
+        assert_eq!(QuantColor::new(236, 176, 175), c);
     }
 
     #[test]
@@ -268,8 +328,8 @@ mod tests {
         let mut shape: Shape = w.objects[1];
         shape.material.ambient = 1.;
         let i = Intersection::new(1., &shape);
-        let comps = i.computations(r, vec![]);
-        let color = w.reflect_color(comps, 1);
+        let comps = i.base_computations(r);
+        let color = w.reflect_color(&comps, 1);
         assert_eq!(color, BLACK);
 
         // The reflected color for a reflective material
@@ -284,8 +344,8 @@ mod tests {
             Vector::new(0., -(2_f64).sqrt() / 2., 2_f64.sqrt() / 2.),
         );
         let i = Intersection::new(2_f64.sqrt(), &shape);
-        let comps = i.computations(r, vec![]);
-        let color = w.reflect_color(comps, 1);
+        let comps = i.base_computations(r);
+        let color = w.reflect_color(&comps, 1);
         assert_eq!(QuantColor::new(48, 60, 36), color);
 
         // The reflected color at the maximum recursive depth
@@ -299,8 +359,71 @@ mod tests {
             Vector::new(0., -(2_f64).sqrt() / 2., 2_f64.sqrt() / 2.),
         );
         let int = Intersection::new(2_f64.sqrt(), &shape);
-        let comps = int.computations(r, vec![]);
-        let color = w.reflect_color(comps, 0);
+        let comps = int.base_computations(r);
+        let color = w.reflect_color(&comps, 0);
         assert_eq!(BLACK, color);
+    }
+
+    #[test]
+    fn refract_color() {
+        // The refracted color with an opaque surface
+        let w = World::default();
+        let shape = w.objects[0];
+        let r = Ray::new(Point::new(0, 0, -5), Vector::new(0, 0, 1));
+        let ints: Vec<Intersection> =
+            vec![Intersection::new(4., &shape), Intersection::new(6., &shape)];
+        let comps = ints[0].computations(r, &ints);
+
+        let c = w.refract_color(&comps, 5);
+        assert_eq!(c, BLACK);
+
+        // The refracted color at the maximum recursive depth
+        let w = World::default();
+        let mut shape: Shape = w.objects[0];
+        shape.material.transparent = 1.;
+        shape.material.refractive_index = 1.5;
+        let r = Ray::new(Point::new(0, 0, -5), Vector::new(0, 0, 1));
+        let ints: Vec<Intersection> =
+            vec![Intersection::new(4., &shape), Intersection::new(6., &shape)];
+        let comps = ints[0].computations(r, &ints);
+        let c = w.refract_color(&comps, 0);
+        assert_eq!(c, BLACK);
+
+        // The refracted color under total internal reflection
+        let w = World::default();
+        let mut shape: Shape = w.objects[0];
+        shape.material.transparent = 1.;
+        shape.material.refractive_index = 1.5;
+        let r = Ray::new(Point::new(0., 0., 2_f64.sqrt() / 2.), Vector::new(0, 1, 0));
+        let ints = vec![
+            Intersection::new(-(2_f64.sqrt()) / 2., &shape),
+            Intersection::new(2_f64.sqrt() / 2., &shape),
+        ];
+        let comps = ints[1].computations(r, &ints);
+        let c = w.refract_color(&comps, 5);
+        assert_eq!(c, BLACK);
+
+        // The refracted color with a refracted ray
+        let mut w = World::default();
+        let mut a: Shape = w.objects[0];
+        a.material.ambient = 1.;
+        a.material.set_pattern(Some(Pattern::default()));
+        let mut b: Shape = w.objects[1];
+        b.material.transparent = 1.;
+        b.material.refractive_index = 1.5;
+        w.objects = vec![a, b];
+
+        let r = Ray::new(Point::new(0., 0., 0.1), Vector::new(0, 1, 0));
+        let ints = vec![
+            Intersection::new(-0.9899, &a),
+            Intersection::new(-0.4899, &b),
+            Intersection::new(0.4899, &b),
+            Intersection::new(0.9899, &a),
+        ];
+
+        let comps = ints[2].computations(r, &ints);
+        let c = w.refract_color(&comps, 5);
+        println!("{:?}", c);
+        // assert_eq!(QuantColor::new(0, 254, 12), c);
     }
 }
