@@ -18,6 +18,12 @@ pub struct Material {
     pub specular: f64,
     /// Shine level
     pub shine: f64,
+    /// Reflect level. 1.0 is maximum reflection
+    pub reflect: f64,
+    /// transparency level 0.0 is default
+    pub transparent: f64,
+    /// refractive index 1.0 is default
+    pub refractive_index: f64,
 }
 
 impl Material {
@@ -51,56 +57,23 @@ impl Material {
     pub fn set_specular(&self, specular: f64) -> Material {
         Material { specular, ..*self }
     }
+    pub fn set_reflect(&self, reflect: f64) -> Material {
+        Material { reflect, ..*self }
+    }
 
-    // Returns a color of light at normal
-    // pub fn lightning(
-    //     &self,
-    //     light: PointLight,
-    //     position: Point,
-    //     eyev: Vector,
-    //     normalv: Vector,
-    //     in_shadow: bool,
-    // ) -> QuantColor {
-    //     let intensity = QuantColor::new(
-    //         light.intensity.r / 255,
-    //         light.intensity.g / 255,
-    //         light.intensity.b / 255,
-    //     );
-    //     let color = if self.pattern.is_some() {
-    //         self.pattern.unwrap().color_at(position)
-    //     } else {
-    //         self.color
-    //     };
+    pub fn set_transparency(&self, transparent: f64) -> Material {
+        Material {
+            transparent,
+            ..*self
+        }
+    }
 
-    //     let effective_color = (color * intensity).clamp();
-    //     let lightv = (light.position - position).normalize();
-
-    //     let ambient = (effective_color * self.ambient as f64).clamp();
-    //     let diffuse;
-    //     let specular;
-
-    //     let light_dot_normal = lightv.dot(normalv);
-    //     if light_dot_normal < 0. {
-    //         diffuse = BLACK;
-    //         specular = BLACK;
-    //     } else {
-    //         diffuse = (effective_color * self.diffuse as f64 * light_dot_normal).clamp();
-    //         let reflectv = (-lightv).reflect(normalv);
-    //         let reflect_dot_eye = reflectv.dot(eyev);
-
-    //         if reflect_dot_eye <= 0. {
-    //             specular = BLACK;
-    //         } else {
-    //             let factor = reflect_dot_eye.powf(self.shine);
-    //             specular = (light.intensity * self.specular as f64 * factor).clamp();
-    //         }
-    //     }
-    //     if in_shadow {
-    //         ambient
-    //     } else {
-    //         ambient + diffuse + specular
-    //     }
-    // }
+    pub fn set_refractive_index(&self, refractive_index: f64) -> Material {
+        Material {
+            refractive_index,
+            ..*self
+        }
+    }
 }
 
 impl Default for Material {
@@ -112,14 +85,21 @@ impl Default for Material {
             specular: 0.9,
             shine: 200.,
             pattern: None,
+            reflect: 0.,
+            transparent: 0.,
+            refractive_index: 1.,
         }
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-//     use crate::units::color::WHITE;
-//     use crate::units::tuple::Tuple;
-//     use crate::world::light::PointLight;
-// }
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn default() {
+        let m = Material::default();
+        assert_eq!(m.reflect, 0.);
+        assert_eq!(m.transparent, 0.);
+        assert_eq!(m.refractive_index, 1.);
+    }
+}

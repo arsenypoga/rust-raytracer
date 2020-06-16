@@ -1,5 +1,5 @@
 use ::raytracer::render::{Camera, Canvas, World};
-use ::raytracer::units::color::{QuantColor, RED, WHITE};
+use ::raytracer::units::color::{QuantColor, BLACK, RED, WHITE};
 use ::raytracer::units::objects::{ObjectType, Shape};
 use ::raytracer::units::tuple::{Point, Tuple, Vector};
 use ::raytracer::units::{Intersection, Matrix, Ray, Transformable};
@@ -25,6 +25,8 @@ fn main() {
         "shadow" => draw_shadow(size),
         "render_sphere_world" => render_sphere_only_world(hsize, vsize),
         "render_plane_world" => render_plane_world(hsize, vsize),
+        "render_refract_scene" => render_reflect_scene(hsize, vsize),
+        "ok" => refraction_render(hsize, vsize),
         _ => println!("Command not recognized!"),
     }
     let duration = start.elapsed();
@@ -182,26 +184,45 @@ fn render_plane_world(hsize: usize, vsize: usize) {
         .set_material(
             Material::default()
                 .set_pattern(Some(
-                    Pattern::new(PatternType::Checkers(
-                        QuantColor::new(0, 0, 125),
-                        QuantColor::new(100, 40, 0),
-                    ))
-                    .translate(10, 0, 0)
-                    .scale(0.1, 0.1, 0.1),
+                    Pattern::new(PatternType::Checkers(WHITE, BLACK))
+                        .translate(10, 0, 0)
+                        .scale(0.1, 0.1, 0.1),
+                ))
+                .set_color(QuantColor::new(255, 240, 240))
+                .set_specular(0.)
+                .set_reflect(1.),
+        )
+        .scale(5, 5, 5);
+
+    let center_wall = Shape::new(ObjectType::Plane)
+        .set_material(
+            Material::default()
+                .set_pattern(Some(
+                    Pattern::new(PatternType::Checkers(WHITE, BLACK))
+                        .translate(10, 0, 0)
+                        .scale(0.1, 0.1, 0.1),
                 ))
                 .set_color(QuantColor::new(255, 240, 240))
                 .set_specular(0.),
         )
-        .scale(10., 0.01, 10.);
+        .scale(5, 5, 5)
+        .rotate_x(consts::FRAC_PI_2);
 
-    let wall = Shape::new(ObjectType::Plane)
+    let side_wall = Shape::new(ObjectType::Plane)
         .set_material(
-            Material::default().set_pattern(Some(Pattern::default().set_pattern_type(
-                PatternType::Stripe(QuantColor::new(150, 0, 0), QuantColor::new(0, 120, 30)),
-            ))),
+            Material::default()
+                .set_pattern(Some(
+                    Pattern::new(PatternType::Checkers(WHITE, BLACK))
+                        .translate(10, 0, 0)
+                        .scale(0.1, 0.1, 0.1),
+                ))
+                .set_color(QuantColor::new(255, 240, 240))
+                .set_specular(0.),
         )
+        .scale(5, 5, 5)
         .rotate_x(consts::FRAC_PI_2)
-        .translate(0, 3, 0);
+        .rotate_z(consts::FRAC_PI_2);
+    // .translate(0, 2, 0);
 
     let middle = Shape::default()
         .set_material(
@@ -221,10 +242,9 @@ fn render_plane_world(hsize: usize, vsize: usize) {
                 .set_diffuse(0.7)
                 .set_specular(0.3),
         )
-        .translate(-0.5, 1., 0.5);
+        .translate(3.7, 1., 3.7);
 
     let right = Shape::default()
-        .transform(Matrix::translate(1.5, 0.5, -0.5) * Matrix::scale(0.5, 0.5, 0.5))
         .set_material(
             Material::default()
                 .set_color(QuantColor::new(10, 255, 125))
@@ -237,28 +257,145 @@ fn render_plane_world(hsize: usize, vsize: usize) {
                 ))
                 .set_diffuse(0.7)
                 .set_specular(0.3),
-        );
+        )
+        .translate(3.5, 0.5, 5.5)
+        .scale(0.5, 0.5, 0.5);
 
     let left = Shape::default()
-        .transform(Matrix::translate(-1.5, 0.5, -0.75) * Matrix::scale(0.33, 0.33, 0.33))
         .set_material(
             Material::default()
                 .set_color(QuantColor::new(255, 25, 10))
                 .set_diffuse(0.7)
                 .set_specular(0.3),
-        );
+        )
+        .translate(5.5, 0.5, 3.75)
+        .scale(0.33, 0.33, 0.33);
 
     let camera = Camera::new(hsize, vsize, consts::FRAC_PI_3).transform(Matrix::view_transform(
-        Point::new(-3., 1.5, -5.),
-        Point::new(0, 1, 0),
+        Point::new(7., 2.5, 7.),
+        Point::new(0, 0, 0),
         Vector::new(0, 1, 0),
     ));
 
     let world = World::new()
-        .set_light(Some(PointLight::new(Point::new(-10, 10, -10), WHITE)))
-        .set_objects(vec![left, right, middle, floor, wall]);
+        .set_light(Some(PointLight::new(Point::new(5, 5, 10), WHITE)))
+        .set_objects(vec![left, right, middle, floor, center_wall, side_wall]);
 
     let canvas = camera.render(world);
 
     canvas.write_png("./images/render_plane_world.png");
+}
+
+fn render_reflect_scene(hsize: usize, vsize: usize) {
+    let camera = Camera::new(hsize, vsize, consts::FRAC_PI_3).transform(Matrix::view_transform(
+        Point::new(-2.6, 1.5, -3.9),
+        Point::new(-0.6, 1., -0.8),
+        Vector::new(0, 1, 0),
+    ));
+
+    let light = PointLight::new(Point::new(10, 10, 0), WHITE);
+
+    let wall_material = Material::default()
+        .set_pattern(Some(
+            Pattern::new(PatternType::Stripe(
+                QuantColor::new(114, 114, 114),
+                QuantColor::new(140, 140, 140),
+            ))
+            .scale(0.25, 0.25, 0.25)
+            .rotate_y(consts::FRAC_PI_2),
+        ))
+        .set_ambient(0.)
+        .set_diffuse(0.4)
+        .set_specular(0.)
+        .set_reflect(0.3);
+
+    let floor = Shape::new(ObjectType::Plane).set_material(
+        Material::default()
+            .set_pattern(Some(Pattern::new(PatternType::Checkers(
+                QuantColor::new(89, 89, 89),
+                QuantColor::new(166, 166, 166),
+            ))))
+            .set_specular(0.)
+            .set_reflect(0.4),
+    );
+
+    let ceiling = Shape::new(ObjectType::Plane)
+        .translate(0, 5, 0)
+        .set_material(
+            Material::default()
+                .set_color(QuantColor::new(204, 204, 204))
+                .set_ambient(0.3)
+                .set_specular(0.),
+        );
+
+    let west_wall = Shape::new(ObjectType::Plane)
+        .rotate_y(consts::FRAC_PI_2)
+        .rotate_z(consts::FRAC_PI_2)
+        .translate(-5, 0, 0)
+        .set_material(wall_material);
+
+    let east_wall = Shape::new(ObjectType::Plane)
+        .rotate_y(consts::FRAC_PI_2)
+        .rotate_z(consts::FRAC_PI_2)
+        .translate(5, 0, 0)
+        .set_material(wall_material);
+
+    let north_wall = Shape::new(ObjectType::Plane)
+        .rotate_x(consts::FRAC_PI_2)
+        .translate(0, 0, 5)
+        .set_material(wall_material);
+
+    let south_wall = Shape::new(ObjectType::Plane)
+        .rotate_x(consts::FRAC_PI_2)
+        .translate(0, 0, -5)
+        .set_material(wall_material);
+
+    let world = World::new().set_light(Some(light)).set_objects(vec![
+        floor, ceiling, west_wall, north_wall, south_wall, east_wall,
+    ]);
+
+    let result = camera.render(world);
+    result.write_png("./images/render_refract_scene.png");
+}
+
+fn refraction_render(hsize: usize, vsize: usize) {
+    let mut world = World::new();
+    let light = Some(PointLight::new(Point::new(0, 10, 0), WHITE));
+    world.light = light;
+
+    let floor = Shape::new(ObjectType::Plane)
+        .set_material(Material::default().set_pattern(Some(
+            Pattern::new(PatternType::Checkers(BLACK, WHITE)).scale(-5, -5, -5),
+        )))
+        // .scale(5, 5, 5)
+        .translate(-15, 0, 0)
+        .rotate_z(consts::FRAC_PI_2);
+
+    let big_sphere = Shape::new(ObjectType::Sphere)
+        .set_material(
+            Material::default()
+                .set_transparency(1.)
+                .set_refractive_index(1.5)
+                .set_reflect(1.)
+                .set_color(WHITE),
+        )
+        .scale(4, 4, 4);
+
+    let small_sphere = Shape::new(ObjectType::Sphere).set_material(
+        Material::default()
+            .set_transparency(1.)
+            .set_refractive_index(1.)
+            .set_reflect(1.)
+            .set_color(BLACK),
+    );
+    world.objects = vec![floor, big_sphere, small_sphere];
+
+    let camera = Camera::new(hsize, vsize, consts::FRAC_PI_3).transform(Matrix::view_transform(
+        Point::new(15, 0, 0),
+        Point::new(0, 0, 0),
+        Vector::new(0, 1, 0),
+    ));
+
+    let canvas = camera.render(world);
+    canvas.write_png("./images/refractive_sphere.png");
 }

@@ -19,10 +19,17 @@ pub struct Shape {
 impl Shape {
     pub fn new(object_type: ObjectType) -> Shape {
         Shape {
-            transformation_matrix: IDENTITY_MATRIX,
-            material: Material::default(),
             object_type,
+            ..Shape::default()
         }
+    }
+
+    pub fn glass_sphere() -> Shape {
+        Shape::default().set_material(
+            Material::default()
+                .set_transparency(1.)
+                .set_refractive_index(1.5),
+        )
     }
 
     pub fn intersect(&self, ray: Ray) -> Vec<Intersection> {
@@ -219,6 +226,14 @@ mod tests {
         assert_eq!(s.transformation_matrix, Matrix::translate(2, 3, 4));
 
         assert_eq!(s.material, Material::default());
+    }
+
+    #[test]
+    fn glass_sphere() {
+        let sphere = Shape::glass_sphere();
+        assert_eq!(sphere.transformation_matrix, IDENTITY_MATRIX);
+        assert_eq!(sphere.material.transparent, 1.);
+        assert_eq!(sphere.material.refractive_index, 1.5);
     }
     // TODO: new_plane()
 
