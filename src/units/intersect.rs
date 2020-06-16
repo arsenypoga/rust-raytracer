@@ -4,7 +4,7 @@ use crate::units::tuple::{Point, Vector};
 use crate::units::utils;
 use crate::units::Ray;
 use std::cmp::Ordering;
-/// Intersection
+/// Intersection is a struct representing a point of intersection.
 #[derive(Debug, Clone, Copy)]
 pub struct Intersection<'a> {
     /// Point of intersection
@@ -13,6 +13,7 @@ pub struct Intersection<'a> {
     pub object: &'a Shape,
 }
 
+/// Computations is a struct that stores computations that are used for various computations :3
 #[derive(Debug, Clone)]
 pub struct Computations<'a> {
     /// T of intersection for the ray
@@ -41,7 +42,10 @@ impl<'a> Intersection<'a> {
         Intersection { t, object }
     }
 
-    /// Returns hits from given intersection vector
+    /// Returns Intersection that is hit from given set of Intersections
+    ///
+    /// The return value is wrapped in an Option.
+    /// If there are no intersections, the return value is None, Otherwise the Some(Intersection) is returned
     pub fn hit(xs: Vec<Intersection>) -> Option<Intersection> {
         let mut clone = xs.clone();
         clone.retain(|i| i.t > 0.);
@@ -53,7 +57,7 @@ impl<'a> Intersection<'a> {
             Some(clone[0])
         }
     }
-
+    /// Returns base computations, that is computations with n1 and n2 set to 1.
     pub fn base_computations(&self, ray: Ray) -> Computations {
         let position = ray.position(self.t);
         let mut normalv = self.object.normal(position);
@@ -78,7 +82,14 @@ impl<'a> Intersection<'a> {
             n2: 1.,
         }
     }
-
+    /// Returns computations with the computed n1 and n2.
+    ///
+    /// # Arguments
+    /// * `r` - A ray at which the Computations are computed.
+    /// * `intersections` - Pointer to a vector with intersections
+    ///
+    /// # Returns
+    /// Populated Computations
     pub fn computations(&self, r: Ray, intersections: &Vec<Intersection>) -> Computations {
         let mut comps = self.base_computations(r);
         let (n1, n2) = self.compute_refraction_indexes(intersections);
@@ -87,6 +98,13 @@ impl<'a> Intersection<'a> {
         comps
     }
 
+    /// Computes refraction indexes for the given computation at the intersections
+    ///
+    /// # Arguments
+    /// * `intersections` - Pointer to a vector with intersections
+    ///
+    /// # Returns
+    /// (n1, n2)
     fn compute_refraction_indexes(&self, intersections: &Vec<Intersection>) -> (f64, f64) {
         let mut containers: Vec<&Shape> = Vec::new();
         let mut n1 = 1.;
@@ -120,6 +138,7 @@ impl<'a> Intersection<'a> {
     }
 }
 impl Computations<'_> {
+    /// Computes how much schlick refraction is applied
     pub fn schlick(&self) -> f64 {
         let mut cos = self.eyev.dot(self.normalv);
 

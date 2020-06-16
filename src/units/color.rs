@@ -12,7 +12,7 @@ pub const WHITE: QuantColor = QuantColor {
 pub const RED: QuantColor = QuantColor { r: 255, g: 0, b: 0 };
 /// Green QuantColor
 pub const GREEN: QuantColor = QuantColor { r: 0, g: 255, b: 0 };
-/// blue QuantColor
+/// Blue QuantColor
 pub const BLUE: QuantColor = QuantColor { r: 0, g: 0, b: 255 };
 
 /// QuantColor represents a color between 0 and 255

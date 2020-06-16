@@ -3,6 +3,9 @@ use crate::units::utils;
 use crate::units::Matrix;
 use std::ops;
 
+/// Vector is a Tuple with four fields.
+/// the last field is not public, because it's what differenciates Point from Vector.
+/// In the case of Point the w is 0
 #[derive(Debug, Copy, Clone)]
 pub struct Vector {
     pub x: f64,
@@ -39,18 +42,21 @@ impl Tuple for Vector {
 }
 
 impl Vector {
+    /// Returns new Vector with a length of 1 in the same direction as original Vector.
     pub fn normalize(&self) -> Vector {
         let magnitude = self.magnitude();
         Vector::new(self.x / magnitude, self.y / magnitude, self.z / magnitude)
     }
+    /// Returns Magnitude of the given Vector
     pub fn magnitude(&self) -> f64 {
         (self.x.powi(2) + self.y.powi(2) + self.z.powi(2)).sqrt()
     }
-
+    /// Returns dot product of two Vectors.
     pub fn dot(&self, other: Vector) -> f64 {
         self.x * other.x + self.y * other.y + self.z * other.z
     }
 
+    /// Returns cross product of two Vectors.
     pub fn cross(&self, other: Vector) -> Vector {
         Vector::new(
             self.y * other.z - self.z * other.y,
@@ -58,7 +64,7 @@ impl Vector {
             self.x * other.y - self.y * other.x,
         )
     }
-
+    /// Returns reflected Vector.
     pub fn reflect(&self, other: Vector) -> Vector {
         *self - other * 2. * self.dot(other)
     }

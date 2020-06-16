@@ -10,6 +10,9 @@ pub const ORIGIN: Point = Point {
     w: 1.,
 };
 
+/// Point is a Tuple with four fields.
+/// the last field is not public, because it's what differenciates Point from Tuple.
+/// In the case of Point the w is 1
 #[derive(Debug, Copy, Clone)]
 pub struct Point {
     pub x: f64,
@@ -27,19 +30,21 @@ impl Tuple for Point {
             w: 1.,
         }
     }
-
+    /// Accesses x value
     fn get_x(&self) -> f64 {
         self.x
     }
-
+    /// Accesses y value
     fn get_y(&self) -> f64 {
         self.y
     }
 
+    /// Accesses z value
     fn get_z(&self) -> f64 {
         self.z
     }
 
+    /// Accesses w value
     fn get_w(&self) -> f64 {
         self.w
     }
