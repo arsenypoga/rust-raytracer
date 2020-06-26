@@ -4,6 +4,7 @@ use crate::units::{Computations, Intersection, Matrix, Ray};
 
 use crate::units::objects::Shape;
 use crate::world::{Material, PointLight};
+#[derive(Debug)]
 pub struct World {
     /// vector of objects in the world.
     pub objects: Vec<Shape>,

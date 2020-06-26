@@ -1,0 +1,78 @@
+- add camera:
+  width: 1000
+  height: 1000
+  field-of-view: 1.0471975511965976
+  from: [0, 1.5, -5]
+  to: [0, 1, 0]
+  up: [0, 1, 0]
+
+- add light:
+  at: [-10, 10, -10]
+  intensity: [255, 255, 255]
+# Boundry Material
+- define material:
+  name: boundry-material
+  color: [255, 240, 240]
+  specular: 0.
+- add object:
+  type: sphere
+  material: boundry-material
+  transform:
+    - scale: [10, 0.01, 10]
+# Left Wall
+- add object:
+  type: sphere
+  material: boundry-material
+  transform:
+    - translate: [0, 0, 5]
+    - rotate-y: -0.7853981633974483
+    - rotate-x: 1.5707963267948966
+    - scale: [10, 0.01, 10]
+# # Right Wall
+- add object:
+  type: sphere
+  material: boundry-material
+  transform:
+    - translate: [0, 0, 5]
+    - rotate-y: 0.7853981633974483
+    - rotate-x: 1.5707963267948966
+    - scale: [10, 0.01, 10]
+
+- define material:
+  name: middle-material
+  color: [25, 255, 10]
+  diffuse: 0.7
+  specular: 0.3
+
+- define material:
+  name: left-material
+  color: [255, 25, 10]
+  specular: 0.3
+  diffuse: 0.7
+
+- define material:
+  name: right-material
+  color: [10, 255, 125]
+  specular: 0.3
+  diffuse: 0.7
+
+# Middle
+- add object:
+  type: sphere
+  material: middle-material
+  transform:
+    - translate: [-0.5, 1, 0.5]
+# Left
+- add object:
+  type: sphere
+  material: left-material
+  transform:
+    - translate: [-1.5, 0.5, -0.75]
+    - scale: [0.33, 0.33, 0.33]
+# Right
+- add object:
+  type: sphere
+  material: right-material
+  transform:
+    - translate: [1.5, 0.5, -0.5]
+    - scale: [0.5, 0.5, 0.5]

@@ -52,8 +52,8 @@ impl Camera {
 
     pub fn render(&self, world: World) -> Canvas {
         let canvas = Mutex::new(Canvas::new(self.hsize, self.vsize));
-        (0..self.hsize).into_par_iter().for_each(|y| {
-            (0..self.vsize).into_par_iter().for_each(|x| {
+        (0..self.vsize).into_par_iter().for_each(|y| {
+            (0..self.hsize).into_par_iter().for_each(|x| {
                 let ray = self.ray_for_pixel(x, y);
                 let color = world.color_at(ray, 5);
                 let mut canvas = canvas.lock().unwrap();
