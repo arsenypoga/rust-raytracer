@@ -112,6 +112,12 @@ impl From<Vector> for Point {
     }
 }
 
+impl From<[f64; 3]> for Point {
+    fn from(a: [f64; 3]) -> Self {
+        Point::new(a[0], a[1], a[2])
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

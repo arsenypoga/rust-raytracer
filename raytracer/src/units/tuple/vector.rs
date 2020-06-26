@@ -118,6 +118,13 @@ impl From<Matrix> for Vector {
         Vector::new(m[0][0], m[1][0], m[2][0])
     }
 }
+
+impl From<[f64; 3]> for Vector {
+    fn from(a: [f64; 3]) -> Self {
+        Vector::new(a[0], a[1], a[2])
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
